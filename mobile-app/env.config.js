@@ -1,0 +1,33 @@
+// UrbanAid Environment Configuration
+// This file contains all environment variables for the app
+
+const environment = {
+  // API Configuration
+  API_URL: 'http://localhost:8000',
+  
+  // Google Maps API Key
+  GOOGLE_MAPS_API_KEY: 'AIzaSyDOahtj8yxnSU71jXhaYCaPvfCpUFJRGpg',
+  
+  // App Configuration
+  APP_NAME: 'UrbanAid',
+  APP_VERSION: '1.0.0',
+  
+  // Feature Flags
+  ENABLE_ANALYTICS: false,
+  ENABLE_CRASH_REPORTING: false,
+  ENABLE_DEBUG_LOGS: true,
+  
+  // API Timeouts (milliseconds)
+  API_TIMEOUT: 10000,
+  LOCATION_TIMEOUT: 15000,
+  
+  // Map Configuration
+  MAP_INITIAL_ZOOM: 15,
+  DEFAULT_SEARCH_RADIUS: 5.0,
+  MAX_SEARCH_RADIUS: 50.0,
+};
+
+export default environment;
+
+// For CommonJS compatibility
+module.exports = environment; 

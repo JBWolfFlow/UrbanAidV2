@@ -1,0 +1,81 @@
+version: '3.8'
+
+services:
+  # PostgreSQL Database
+  postgres:
+    image: postgres:15-alpine
+    container_name: urbanaid_postgres
+    environment:
+      POSTGRES_DB: urbanaid
+      POSTGRES_USER: urbanaid
+      POSTGRES_PASSWORD: urbanaid_password
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ./init.sql:/docker-entrypoint-initdb.d/init.sql
+    networks:
+      - urbanaid_network
+    restart: unless-stopped
+
+  # Redis for caching and sessions
+  redis:
+    image: redis:7-alpine
+    container_name: urbanaid_redis
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_data:/data
+    networks:
+      - urbanaid_network
+    restart: unless-stopped
+
+  # FastAPI Backend
+  api:
+    build:
+      context: ../api
+      dockerfile: ../docker/Dockerfile.api
+    container_name: urbanaid_api
+    environment:
+      - DATABASE_URL=postgresql://urbanaid:urbanaid_password@postgres:5432/urbanaid
+      - REDIS_URL=redis://redis:6379
+      - GOOGLE_MAPS_API_KEY=${GOOGLE_MAPS_API_KEY}
+      - JWT_SECRET_KEY=${JWT_SECRET_KEY:-your-secret-key-here}
+      - ENVIRONMENT=development
+    ports:
+      - "8000:8000"
+    depends_on:
+      - postgres
+      - redis
+    volumes:
+      - ../api:/app
+      - /app/__pycache__
+    networks:
+      - urbanaid_network
+    restart: unless-stopped
+    command: uvicorn main:app --host 0.0.0.0 --port 8000 --reload
+
+  # Nginx reverse proxy (optional for production)
+  nginx:
+    image: nginx:alpine
+    container_name: urbanaid_nginx
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./nginx.conf:/etc/nginx/nginx.conf
+    depends_on:
+      - api
+    networks:
+      - urbanaid_network
+    restart: unless-stopped
+    profiles:
+      - production
+
+volumes:
+  postgres_data:
+  redis_data:
+
+networks:
+  urbanaid_network:
+    driver: bridge 

@@ -1,0 +1,54 @@
+{
+  "expo": {
+    "name": "UrbanAid",
+    "slug": "urbanaid",
+    "version": "1.0.0",
+    "orientation": "portrait",
+    "icon": "./assets/icon.png",
+    "splash": {
+      "image": "./assets/splash.png",
+      "resizeMode": "contain",
+      "backgroundColor": "#2196F3"
+    },
+    "updates": {
+      "fallbackToCacheTimeout": 0
+    },
+    "assetBundlePatterns": ["**/*"],
+    "ios": {
+      "bundleIdentifier": "com.urbanaid.app",
+      "supportsTablet": true,
+      "infoPlist": {
+        "NSLocationWhenInUseUsageDescription": "UrbanAid needs location access to find nearby public utilities.",
+        "NSLocationAlwaysAndWhenInUseUsageDescription": "UrbanAid needs location access to find nearby public utilities.",
+        "NSCameraUsageDescription": "UrbanAid needs camera access to take photos of utilities.",
+        "NSPhotoLibraryUsageDescription": "UrbanAid needs photo library access to select utility images."
+      },
+      "config": {
+        "googleMapsApiKey": "AIzaSyDOahtj8yxnSU71jXhaYCaPvfCpUFJRGpg"
+      }
+    },
+    "android": {
+      "package": "com.urbanaid.app",
+      "adaptiveIcon": {
+        "foregroundImage": "./assets/adaptive-icon.png",
+        "backgroundColor": "#2196F3"
+      },
+      "permissions": [
+        "ACCESS_FINE_LOCATION",
+        "ACCESS_COARSE_LOCATION",
+        "CAMERA",
+        "READ_EXTERNAL_STORAGE",
+        "WRITE_EXTERNAL_STORAGE"
+      ],
+      "config": {
+        "googleMaps": {
+          "apiKey": "AIzaSyDOahtj8yxnSU71jXhaYCaPvfCpUFJRGpg"
+        }
+      }
+    },
+    "web": {
+      "favicon": "./assets/favicon.png"
+    },
+    "plugins": []
+  }
+} 

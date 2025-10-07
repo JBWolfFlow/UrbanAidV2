@@ -1,0 +1,8 @@
+{
+  "devDependencies": {
+    "metro-react-native-babel-transformer": "^0.77.0"
+  },
+  "dependencies": {
+    "@react-native-community/geolocation": "^3.4.0"
+  }
+}

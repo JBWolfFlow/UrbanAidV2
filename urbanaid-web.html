@@ -1,0 +1,412 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>🇺🇸 UrbanAid - National Restroom Finder</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background-color: #f5f5f5;
+            color: #333;
+        }
+        
+        .header {
+            background: linear-gradient(135deg, #2196F3, #1976D2);
+            color: white;
+            padding: 20px;
+            text-align: center;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        
+        .header h1 {
+            font-size: 2.5em;
+            margin-bottom: 10px;
+        }
+        
+        .header p {
+            font-size: 1.2em;
+            opacity: 0.9;
+        }
+        
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+        
+        .search-section {
+            background: white;
+            padding: 20px;
+            border-radius: 10px;
+            margin-bottom: 20px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        
+        .search-input {
+            width: 100%;
+            padding: 15px;
+            border: 2px solid #ddd;
+            border-radius: 8px;
+            font-size: 16px;
+            margin-bottom: 15px;
+        }
+        
+        .search-input:focus {
+            outline: none;
+            border-color: #2196F3;
+        }
+        
+        .state-selector {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+            margin-bottom: 15px;
+        }
+        
+        .state-btn {
+            padding: 8px 16px;
+            background: #f0f0f0;
+            border: 1px solid #ddd;
+            border-radius: 20px;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+        
+        .state-btn:hover {
+            background: #e0e0e0;
+        }
+        
+        .state-btn.active {
+            background: #2196F3;
+            color: white;
+            border-color: #2196F3;
+        }
+        
+        .stats-section {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 20px;
+            margin-bottom: 20px;
+        }
+        
+        .stat-card {
+            background: white;
+            padding: 20px;
+            border-radius: 10px;
+            text-align: center;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        
+        .stat-number {
+            font-size: 2.5em;
+            font-weight: bold;
+            color: #2196F3;
+            margin-bottom: 5px;
+        }
+        
+        .stat-label {
+            color: #666;
+            font-size: 1.1em;
+        }
+        
+        .results-section {
+            background: white;
+            border-radius: 10px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+            overflow: hidden;
+        }
+        
+        .results-header {
+            background: #f8f9fa;
+            padding: 20px;
+            border-bottom: 1px solid #ddd;
+        }
+        
+        .results-list {
+            max-height: 600px;
+            overflow-y: auto;
+        }
+        
+        .restroom-item {
+            padding: 20px;
+            border-bottom: 1px solid #eee;
+            cursor: pointer;
+            transition: background-color 0.3s;
+        }
+        
+        .restroom-item:hover {
+            background-color: #f8f9fa;
+        }
+        
+        .restroom-name {
+            font-size: 1.2em;
+            font-weight: bold;
+            color: #2196F3;
+            margin-bottom: 5px;
+        }
+        
+        .restroom-address {
+            color: #666;
+            margin-bottom: 10px;
+        }
+        
+        .restroom-details {
+            display: flex;
+            gap: 15px;
+            font-size: 0.9em;
+        }
+        
+        .restroom-type {
+            background: #e3f2fd;
+            color: #1976d2;
+            padding: 4px 8px;
+            border-radius: 4px;
+        }
+        
+        .restroom-rating {
+            color: #ff9800;
+        }
+        
+        .loading {
+            text-align: center;
+            padding: 40px;
+            font-size: 1.2em;
+            color: #666;
+        }
+        
+        .no-results {
+            text-align: center;
+            padding: 40px;
+            color: #666;
+        }
+        
+        @media (max-width: 768px) {
+            .header h1 {
+                font-size: 2em;
+            }
+            
+            .container {
+                padding: 10px;
+            }
+            
+            .state-selector {
+                justify-content: center;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <h1>🇺🇸 UrbanAid</h1>
+        <p>National Restroom Finder • All 50 States</p>
+    </div>
+    
+    <div class="container">
+        <div class="search-section">
+            <input 
+                type="text" 
+                class="search-input" 
+                placeholder="Search restrooms by name or location..."
+                id="searchInput"
+            >
+            
+            <div class="state-selector" id="stateSelector">
+                <!-- States will be populated by JavaScript -->
+            </div>
+        </div>
+        
+        <div class="stats-section">
+            <div class="stat-card">
+                <div class="stat-number" id="totalCount">0</div>
+                <div class="stat-label">Total Facilities</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-number">50</div>
+                <div class="stat-label">States Covered</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-number" id="filteredCount">0</div>
+                <div class="stat-label">Filtered Results</div>
+            </div>
+        </div>
+        
+        <div class="results-section">
+            <div class="results-header">
+                <h2>🚻 Restroom Locations</h2>
+                <p>Click on any location for more details</p>
+            </div>
+            <div class="results-list" id="resultsList">
+                <div class="loading">🔄 Loading national database...</div>
+            </div>
+        </div>
+    </div>
+    
+    <script>
+        // Sample data - in a real app, this would come from your national database
+        const sampleRestrooms = [
+            {
+                id: 'ca_la_001',
+                name: 'Downtown LA Public Restroom',
+                address: '123 Main St, Los Angeles, CA 90012',
+                type: 'restroom',
+                rating: 4.2,
+                state: 'California'
+            },
+            {
+                id: 'ny_nyc_001',
+                name: 'Central Park Restroom',
+                address: 'Central Park, New York, NY 10024',
+                type: 'restroom',
+                rating: 4.0,
+                state: 'New York'
+            },
+            {
+                id: 'tx_hou_001',
+                name: 'Houston City Hall Restroom',
+                address: '901 Bagby St, Houston, TX 77002',
+                type: 'restroom',
+                rating: 4.5,
+                state: 'Texas'
+            },
+            {
+                id: 'fl_mia_001',
+                name: 'Miami Beach Public Restroom',
+                address: '1001 Ocean Dr, Miami Beach, FL 33139',
+                type: 'restroom',
+                rating: 3.8,
+                state: 'Florida'
+            },
+            {
+                id: 'wa_sea_001',
+                name: 'Seattle Waterfront Restroom',
+                address: 'Pier 70, Seattle, WA 98121',
+                type: 'restroom',
+                rating: 4.3,
+                state: 'Washington'
+            }
+        ];
+        
+        const states = [
+            'All States', 'Alabama', 'Alaska', 'Arizona', 'Arkansas', 'California',
+            'Colorado', 'Connecticut', 'Delaware', 'Florida', 'Georgia', 'Hawaii',
+            'Idaho', 'Illinois', 'Indiana', 'Iowa', 'Kansas', 'Kentucky', 'Louisiana',
+            'Maine', 'Maryland', 'Massachusetts', 'Michigan', 'Minnesota', 'Mississippi',
+            'Missouri', 'Montana', 'Nebraska', 'Nevada', 'New Hampshire', 'New Jersey',
+            'New Mexico', 'New York', 'North Carolina', 'North Dakota', 'Ohio',
+            'Oklahoma', 'Oregon', 'Pennsylvania', 'Rhode Island', 'South Carolina',
+            'South Dakota', 'Tennessee', 'Texas', 'Utah', 'Vermont', 'Virginia',
+            'Washington', 'West Virginia', 'Wisconsin', 'Wyoming'
+        ];
+        
+        let currentData = sampleRestrooms;
+        let currentFilter = 'All States';
+        let searchQuery = '';
+        
+        // Initialize the app
+        function initApp() {
+            setupStateSelector();
+            setupSearchInput();
+            updateDisplay();
+            
+            // Simulate loading real data
+            setTimeout(() => {
+                console.log('🇺🇸 UrbanAid: Simulating national database load');
+                console.log('📊 In a real app, this would load your 50-state database');
+                updateDisplay();
+            }, 1000);
+        }
+        
+        function setupStateSelector() {
+            const selector = document.getElementById('stateSelector');
+            states.forEach(state => {
+                const btn = document.createElement('button');
+                btn.className = 'state-btn';
+                btn.textContent = state;
+                btn.onclick = () => selectState(state);
+                if (state === 'All States') btn.classList.add('active');
+                selector.appendChild(btn);
+            });
+        }
+        
+        function setupSearchInput() {
+            const input = document.getElementById('searchInput');
+            input.addEventListener('input', (e) => {
+                searchQuery = e.target.value.toLowerCase();
+                updateDisplay();
+            });
+        }
+        
+        function selectState(state) {
+            currentFilter = state;
+            
+            // Update button states
+            document.querySelectorAll('.state-btn').forEach(btn => {
+                btn.classList.remove('active');
+                if (btn.textContent === state) {
+                    btn.classList.add('active');
+                }
+            });
+            
+            updateDisplay();
+        }
+        
+        function updateDisplay() {
+            const filtered = currentData.filter(restroom => {
+                const matchesSearch = !searchQuery || 
+                    restroom.name.toLowerCase().includes(searchQuery) ||
+                    restroom.address.toLowerCase().includes(searchQuery);
+                
+                const matchesState = currentFilter === 'All States' || 
+                    restroom.state === currentFilter;
+                
+                return matchesSearch && matchesState;
+            });
+            
+            // Update stats
+            document.getElementById('totalCount').textContent = currentData.length;
+            document.getElementById('filteredCount').textContent = filtered.length;
+            
+            // Update results list
+            const resultsList = document.getElementById('resultsList');
+            
+            if (filtered.length === 0) {
+                resultsList.innerHTML = `
+                    <div class="no-results">
+                        <h3>No restrooms found</h3>
+                        <p>Try adjusting your search or selecting a different state</p>
+                    </div>
+                `;
+                return;
+            }
+            
+            resultsList.innerHTML = filtered.map(restroom => `
+                <div class="restroom-item" onclick="showRestroomDetails('${restroom.id}')">
+                    <div class="restroom-name">${restroom.name}</div>
+                    <div class="restroom-address">📍 ${restroom.address}</div>
+                    <div class="restroom-details">
+                        <span class="restroom-type">🚻 ${restroom.type}</span>
+                        <span class="restroom-rating">⭐ ${restroom.rating}/5</span>
+                    </div>
+                </div>
+            `).join('');
+        }
+        
+        function showRestroomDetails(id) {
+            const restroom = currentData.find(r => r.id === id);
+            if (restroom) {
+                alert(`${restroom.name}\n\n📍 ${restroom.address}\n⭐ Rating: ${restroom.rating}/5\n🚻 Type: ${restroom.type}`);
+            }
+        }
+        
+        // Start the app
+        initApp();
+    </script>
+</body>
+</html> 
