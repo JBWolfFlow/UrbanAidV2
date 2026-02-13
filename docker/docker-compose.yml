@@ -1,0 +1,307 @@
+version: '3.8'
+
+# =============================================================================
+# UrbanAid Docker Compose Configuration
+# =============================================================================
+# Development: docker-compose up
+# Production:  docker-compose --profile production up
+# =============================================================================
+
+services:
+  # ===========================================================================
+  # PostgreSQL Database
+  # ===========================================================================
+  postgres:
+    image: postgres:15-alpine
+    container_name: urbanaid_postgres
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB:-urbanaid}
+      POSTGRES_USER: ${POSTGRES_USER:-urbanaid}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-urbanaid_password}
+      # Performance tuning
+      POSTGRES_INITDB_ARGS: "--encoding=UTF-8 --lc-collate=C --lc-ctype=C"
+    ports:
+      - "${POSTGRES_PORT:-5432}:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ./init.sql:/docker-entrypoint-initdb.d/init.sql
+    networks:
+      - urbanaid_network
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-urbanaid} -d ${POSTGRES_DB:-urbanaid}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 10s
+
+  # ===========================================================================
+  # Redis Cache & Session Store
+  # ===========================================================================
+  redis:
+    image: redis:7-alpine
+    container_name: urbanaid_redis
+    command: redis-server --appendonly yes --maxmemory 256mb --maxmemory-policy allkeys-lru
+    ports:
+      - "${REDIS_PORT:-6379}:6379"
+    volumes:
+      - redis_data:/data
+    networks:
+      - urbanaid_network
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 5s
+
+  # ===========================================================================
+  # FastAPI Backend
+  # ===========================================================================
+  api:
+    build:
+      context: ../api
+      dockerfile: ../docker/Dockerfile.api
+      args:
+        ENVIRONMENT: ${ENVIRONMENT:-development}
+    container_name: urbanaid_api
+    environment:
+      # Database
+      - DATABASE_URL=postgresql://${POSTGRES_USER:-urbanaid}:${POSTGRES_PASSWORD:-urbanaid_password}@postgres:5432/${POSTGRES_DB:-urbanaid}
+      - DB_POOL_SIZE=${DB_POOL_SIZE:-5}
+      - DB_MAX_OVERFLOW=${DB_MAX_OVERFLOW:-10}
+      # Redis
+      - REDIS_URL=redis://redis:6379/0
+      # Security
+      - JWT_SECRET_KEY=${JWT_SECRET_KEY:-change-this-in-production-use-secrets-token-urlsafe-64}
+      - JWT_ALGORITHM=${JWT_ALGORITHM:-HS256}
+      - ACCESS_TOKEN_EXPIRE_MINUTES=${ACCESS_TOKEN_EXPIRE_MINUTES:-30}
+      - REFRESH_TOKEN_EXPIRE_DAYS=${REFRESH_TOKEN_EXPIRE_DAYS:-7}
+      # Environment
+      - ENVIRONMENT=${ENVIRONMENT:-development}
+      - LOG_LEVEL=${LOG_LEVEL:-INFO}
+      # CORS
+      - ALLOWED_ORIGINS=${ALLOWED_ORIGINS:-http://localhost:3000,http://localhost:8081,http://localhost:19006}
+      # Rate Limiting
+      - RATE_LIMIT_DEFAULT=${RATE_LIMIT_DEFAULT:-100}
+      - RATE_LIMIT_WINDOW=${RATE_LIMIT_WINDOW:-60}
+      - RATE_LIMIT_LOGIN=${RATE_LIMIT_LOGIN:-5}
+      - RATE_LIMIT_ANONYMOUS=${RATE_LIMIT_ANONYMOUS:-20}
+      - ENABLE_RATE_LIMITING=${ENABLE_RATE_LIMITING:-true}
+      # External APIs
+      - GOOGLE_MAPS_API_KEY=${GOOGLE_MAPS_API_KEY:-}
+      - HRSA_API_KEY=${HRSA_API_KEY:-}
+      # Email (SMTP)
+      - SMTP_HOST=${SMTP_HOST:-}
+      - SMTP_PORT=${SMTP_PORT:-587}
+      - SMTP_USER=${SMTP_USER:-}
+      - SMTP_PASSWORD=${SMTP_PASSWORD:-}
+      - SMTP_FROM_EMAIL=${SMTP_FROM_EMAIL:-noreply@urbanaid.org}
+      - SMTP_FROM_NAME=${SMTP_FROM_NAME:-UrbanAid}
+      # SendGrid (Alternative)
+      - SENDGRID_API_KEY=${SENDGRID_API_KEY:-}
+      # Push Notifications (FCM)
+      - FCM_SERVER_KEY=${FCM_SERVER_KEY:-}
+      # SMS (Twilio)
+      - TWILIO_ACCOUNT_SID=${TWILIO_ACCOUNT_SID:-}
+      - TWILIO_AUTH_TOKEN=${TWILIO_AUTH_TOKEN:-}
+      - TWILIO_PHONE_NUMBER=${TWILIO_PHONE_NUMBER:-}
+      # Feature Flags
+      - ENABLE_DOCS=${ENABLE_DOCS:-true}
+      - ENABLE_EMAIL_VERIFICATION=${ENABLE_EMAIL_VERIFICATION:-false}
+    ports:
+      - "${API_PORT:-8000}:8000"
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    volumes:
+      - ../api:/app
+      - /app/__pycache__
+    networks:
+      - urbanaid_network
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+    command: uvicorn main:app --host 0.0.0.0 --port 8000 --reload
+
+  # ===========================================================================
+  # API (Production Mode)
+  # ===========================================================================
+  api-production:
+    build:
+      context: ../api
+      dockerfile: ../docker/Dockerfile.api
+      args:
+        ENVIRONMENT: production
+    container_name: urbanaid_api_prod
+    environment:
+      # Database
+      - DATABASE_URL=postgresql://${POSTGRES_USER:-urbanaid}:${POSTGRES_PASSWORD:-urbanaid_password}@postgres:5432/${POSTGRES_DB:-urbanaid}
+      - DB_POOL_SIZE=${DB_POOL_SIZE:-10}
+      - DB_MAX_OVERFLOW=${DB_MAX_OVERFLOW:-20}
+      # Redis
+      - REDIS_URL=redis://redis:6379/0
+      # Security - MUST be set in production
+      - JWT_SECRET_KEY=${JWT_SECRET_KEY:?JWT_SECRET_KEY must be set for production}
+      - JWT_ALGORITHM=${JWT_ALGORITHM:-HS256}
+      - ACCESS_TOKEN_EXPIRE_MINUTES=${ACCESS_TOKEN_EXPIRE_MINUTES:-15}
+      - REFRESH_TOKEN_EXPIRE_DAYS=${REFRESH_TOKEN_EXPIRE_DAYS:-7}
+      # Environment
+      - ENVIRONMENT=production
+      - LOG_LEVEL=${LOG_LEVEL:-WARNING}
+      - LOG_FORMAT=json
+      # CORS - MUST be set in production
+      - ALLOWED_ORIGINS=${ALLOWED_ORIGINS:?ALLOWED_ORIGINS must be set for production}
+      # Rate Limiting
+      - RATE_LIMIT_DEFAULT=${RATE_LIMIT_DEFAULT:-100}
+      - RATE_LIMIT_WINDOW=${RATE_LIMIT_WINDOW:-60}
+      - RATE_LIMIT_LOGIN=${RATE_LIMIT_LOGIN:-5}
+      - RATE_LIMIT_ANONYMOUS=${RATE_LIMIT_ANONYMOUS:-20}
+      - ENABLE_RATE_LIMITING=true
+      # HSTS
+      - HSTS_MAX_AGE=${HSTS_MAX_AGE:-31536000}
+      # External APIs
+      - GOOGLE_MAPS_API_KEY=${GOOGLE_MAPS_API_KEY:-}
+      - HRSA_API_KEY=${HRSA_API_KEY:-}
+      # Email
+      - SMTP_HOST=${SMTP_HOST:-}
+      - SMTP_PORT=${SMTP_PORT:-587}
+      - SMTP_USER=${SMTP_USER:-}
+      - SMTP_PASSWORD=${SMTP_PASSWORD:-}
+      - SMTP_FROM_EMAIL=${SMTP_FROM_EMAIL:-noreply@urbanaid.org}
+      - SMTP_FROM_NAME=${SMTP_FROM_NAME:-UrbanAid}
+      - SENDGRID_API_KEY=${SENDGRID_API_KEY:-}
+      # Push & SMS
+      - FCM_SERVER_KEY=${FCM_SERVER_KEY:-}
+      - TWILIO_ACCOUNT_SID=${TWILIO_ACCOUNT_SID:-}
+      - TWILIO_AUTH_TOKEN=${TWILIO_AUTH_TOKEN:-}
+      - TWILIO_PHONE_NUMBER=${TWILIO_PHONE_NUMBER:-}
+      # Feature Flags
+      - ENABLE_DOCS=false
+      - ENABLE_EMAIL_VERIFICATION=true
+    expose:
+      - "8000"
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    networks:
+      - urbanaid_network
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+    # Gunicorn for production with multiple workers
+    command: gunicorn main:app -w ${WORKERS:-4} -k uvicorn.workers.UvicornWorker -b 0.0.0.0:8000 --access-logfile - --error-logfile -
+    profiles:
+      - production
+    deploy:
+      resources:
+        limits:
+          cpus: '2'
+          memory: 2G
+        reservations:
+          cpus: '0.5'
+          memory: 512M
+
+  # ===========================================================================
+  # Nginx Reverse Proxy (Production)
+  # ===========================================================================
+  nginx:
+    image: nginx:alpine
+    container_name: urbanaid_nginx
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./nginx.conf:/etc/nginx/nginx.conf:ro
+      - ./ssl:/etc/nginx/ssl:ro
+      - ./static:/var/www/static:ro
+    depends_on:
+      api-production:
+        condition: service_healthy
+    networks:
+      - urbanaid_network
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "wget", "-q", "--spider", "http://localhost/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 10s
+    profiles:
+      - production
+
+  # ===========================================================================
+  # Database Admin (Development Only)
+  # ===========================================================================
+  pgadmin:
+    image: dpage/pgadmin4:latest
+    container_name: urbanaid_pgadmin
+    environment:
+      PGADMIN_DEFAULT_EMAIL: ${PGADMIN_EMAIL:-admin@urbanaid.local}
+      PGADMIN_DEFAULT_PASSWORD: ${PGADMIN_PASSWORD:-admin}
+      PGADMIN_CONFIG_SERVER_MODE: 'False'
+    ports:
+      - "${PGADMIN_PORT:-5050}:80"
+    depends_on:
+      postgres:
+        condition: service_healthy
+    volumes:
+      - pgadmin_data:/var/lib/pgadmin
+    networks:
+      - urbanaid_network
+    restart: unless-stopped
+    profiles:
+      - development
+      - tools
+
+  # ===========================================================================
+  # Redis Commander (Development Only)
+  # ===========================================================================
+  redis-commander:
+    image: rediscommander/redis-commander:latest
+    container_name: urbanaid_redis_commander
+    environment:
+      - REDIS_HOSTS=local:redis:6379
+    ports:
+      - "${REDIS_COMMANDER_PORT:-8081}:8081"
+    depends_on:
+      redis:
+        condition: service_healthy
+    networks:
+      - urbanaid_network
+    restart: unless-stopped
+    profiles:
+      - development
+      - tools
+
+# =============================================================================
+# Volumes
+# =============================================================================
+volumes:
+  postgres_data:
+    name: urbanaid_postgres_data
+  redis_data:
+    name: urbanaid_redis_data
+  pgadmin_data:
+    name: urbanaid_pgadmin_data
+
+# =============================================================================
+# Networks
+# =============================================================================
+networks:
+  urbanaid_network:
+    name: urbanaid_network
+    driver: bridge
