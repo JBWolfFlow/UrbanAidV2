@@ -20,7 +20,7 @@
         "buildConfiguration": "Release"
       },
       "env": {
-        "URBANAID_API_URL": "https://api.urbanaid.org"
+        "URBANAID_API_URL": "https://urbanaidv2-production.up.railway.app"
       }
     },
     "production": {
@@ -29,7 +29,7 @@
         "buildConfiguration": "Release"
       },
       "env": {
-        "URBANAID_API_URL": "https://api.urbanaid.org"
+        "URBANAID_API_URL": "https://urbanaidv2-production.up.railway.app"
       }
     }
   }
