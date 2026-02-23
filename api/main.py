@@ -11,7 +11,6 @@ Security Features:
 """
 import os
 import logging
-import threading
 import time as _time
 import httpx as _httpx
 
@@ -71,43 +70,19 @@ ENVIRONMENT = os.getenv("ENVIRONMENT", "development")
 RATE_LIMIT_ENABLED = os.getenv("RATE_LIMIT_ENABLED", "true").lower() == "true"
 
 
-def _auto_seed_if_empty():
-    """Check if utilities table is empty and seed in background if so."""
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    """Application lifespan events"""
+    init_db()
+    # Log utility count on startup for visibility
     from models.database import SessionLocal
     db = SessionLocal()
     try:
         count = db.query(UtilityModel).count()
-        if count > 0:
-            logger.info("Database has %d utilities, skipping auto-seed", count)
-            return
-        logger.info("Database empty — starting auto-seed from government APIs")
     finally:
         db.close()
-
-    from scripts.seed_wa import main as seed_main
-    import sys
-    sys.argv = ["seed_wa.py", "--clear"]
-    try:
-        seed_main()
-        db = SessionLocal()
-        count = db.query(UtilityModel).count()
-        db.close()
-        logger.info("Auto-seed complete: %d utilities loaded", count)
-    except Exception as e:
-        logger.error("Auto-seed failed: %s", e)
-
-
-@asynccontextmanager
-async def lifespan(app: FastAPI):
-    """Application lifespan events"""
-    # Startup
-    init_db()
-    logger.info("UrbanAid API started (env=%s)", ENVIRONMENT)
-    # Auto-seed in background thread so API is immediately available
-    seed_thread = threading.Thread(target=_auto_seed_if_empty, daemon=True)
-    seed_thread.start()
+    logger.info("UrbanAid API started (env=%s, utilities=%d)", ENVIRONMENT, count)
     yield
-    # Shutdown
     logger.info("UrbanAid API shutting down")
 
 
@@ -180,6 +155,22 @@ async def health_check():
     }
 
 
+@app.get("/health/data", tags=["Health"])
+async def data_health(db: Session = Depends(get_db)):
+    """Report utility counts by category for data completeness verification."""
+    from sqlalchemy import func
+    counts = db.query(
+        UtilityModel.category,
+        func.count(UtilityModel.id)
+    ).filter(UtilityModel.is_active == True).group_by(UtilityModel.category).all()
+
+    total = sum(c for _, c in counts)
+    return {
+        "total": total,
+        "by_category": {cat: count for cat, count in counts},
+    }
+
+
 # ========== ADMIN: SEED ENDPOINT ==========
 
 ADMIN_SEED_KEY = os.getenv("ADMIN_SEED_KEY", "urbanaid-seed-2026")
@@ -215,6 +206,7 @@ async def admin_seed(
                 results[label] = {"fetched": 0, "inserted": 0, "skipped": 0}
 
         total = db.query(UtilityModel).count()
+        _util_cache_invalidate()
         return {"results": results, "total_utilities": total}
     finally:
         db.close()
