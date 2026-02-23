@@ -32,14 +32,5 @@
         "URBANAID_API_URL": "https://api.urbanaid.org"
       }
     }
-  },
-  "submit": {
-    "production": {
-      "ios": {
-        "appleId": "",
-        "ascAppId": "",
-        "appleTeamId": ""
-      }
-    }
   }
 }

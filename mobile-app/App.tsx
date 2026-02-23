@@ -7,7 +7,6 @@ import {
   TouchableOpacity,
   Alert,
 } from 'react-native';
-import * as Sentry from '@sentry/react-native';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import { NavigationContainer } from '@react-navigation/native';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
@@ -48,19 +47,6 @@ import { GlassTabBar } from './src/components/ui/GlassTabBar';
 import { initializeI18n } from './src/services/i18n';
 
 import MapView from 'react-native-maps';
-import environment from './env.config';
-
-// --- Sentry crash & error reporting ---
-Sentry.init({
-  dsn: environment.SENTRY_DSN,
-  environment: __DEV__ ? 'development' : 'production',
-  enabled: !__DEV__,
-  tracesSampleRate: 0.1,
-  beforeSend(event) {
-    if (__DEV__) return null;
-    return event;
-  },
-});
 
 const Tab = createBottomTabNavigator();
 const Stack = createStackNavigator();
@@ -216,4 +202,4 @@ const styles = StyleSheet.create({
   },
 });
 
-export default Sentry.wrap(App);
+export default App;

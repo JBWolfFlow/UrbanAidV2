@@ -65,15 +65,10 @@ export default {
     web: {
       favicon: './assets/favicon.png',
     },
-    plugins: [
-      ['@sentry/react-native/expo', {
-        organization: process.env.SENTRY_ORG || 'urbanaid',
-        project: process.env.SENTRY_PROJECT || 'urbanaid-mobile',
-      }],
-    ],
+    plugins: [],
     extra: {
       eas: {
-        projectId: process.env.EAS_PROJECT_ID || '',
+        projectId: 'ecf5c188-010a-4e84-9e45-2b3cae4acb92',
       },
     },
   },

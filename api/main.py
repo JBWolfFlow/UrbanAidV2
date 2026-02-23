@@ -13,7 +13,6 @@ import os
 import logging
 import time as _time
 import httpx as _httpx
-import sentry_sdk
 
 from utils.logging_config import setup_logging
 setup_logging()
@@ -69,18 +68,6 @@ security = HTTPBearer(auto_error=False)
 # Environment configuration
 ENVIRONMENT = os.getenv("ENVIRONMENT", "development")
 RATE_LIMIT_ENABLED = os.getenv("RATE_LIMIT_ENABLED", "true").lower() == "true"
-
-
-# --- Sentry error tracking ---
-SENTRY_DSN = os.getenv("SENTRY_DSN")
-if SENTRY_DSN:
-    sentry_sdk.init(
-        dsn=SENTRY_DSN,
-        environment=ENVIRONMENT,
-        traces_sample_rate=0.1 if ENVIRONMENT == "production" else 1.0,
-        send_default_pii=False,
-    )
-    logger.info("Sentry initialized (env=%s)", ENVIRONMENT)
 
 
 @asynccontextmanager

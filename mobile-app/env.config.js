@@ -22,9 +22,6 @@ const environment = {
   ENABLE_CRASH_REPORTING: isProduction,
   ENABLE_DEBUG_LOGS: !isProduction,
 
-  // Sentry DSN (error tracking)
-  SENTRY_DSN: process.env.SENTRY_DSN || '',
-
   // API Timeouts (milliseconds)
   API_TIMEOUT: 30000,
   LOCATION_TIMEOUT: 15000,
