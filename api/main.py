@@ -11,6 +11,7 @@ Security Features:
 """
 import os
 import logging
+import threading
 import time as _time
 import httpx as _httpx
 
@@ -70,12 +71,41 @@ ENVIRONMENT = os.getenv("ENVIRONMENT", "development")
 RATE_LIMIT_ENABLED = os.getenv("RATE_LIMIT_ENABLED", "true").lower() == "true"
 
 
+def _auto_seed_if_empty():
+    """Check if utilities table is empty and seed in background if so."""
+    from models.database import SessionLocal
+    db = SessionLocal()
+    try:
+        count = db.query(UtilityModel).count()
+        if count > 0:
+            logger.info("Database has %d utilities, skipping auto-seed", count)
+            return
+        logger.info("Database empty — starting auto-seed from government APIs")
+    finally:
+        db.close()
+
+    from scripts.seed_wa import main as seed_main
+    import sys
+    sys.argv = ["seed_wa.py", "--clear"]
+    try:
+        seed_main()
+        db = SessionLocal()
+        count = db.query(UtilityModel).count()
+        db.close()
+        logger.info("Auto-seed complete: %d utilities loaded", count)
+    except Exception as e:
+        logger.error("Auto-seed failed: %s", e)
+
+
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     """Application lifespan events"""
     # Startup
     init_db()
     logger.info("UrbanAid API started (env=%s)", ENVIRONMENT)
+    # Auto-seed in background thread so API is immediately available
+    seed_thread = threading.Thread(target=_auto_seed_if_empty, daemon=True)
+    seed_thread.start()
     yield
     # Shutdown
     logger.info("UrbanAid API shutting down")

@@ -268,6 +268,20 @@ const CATEGORY_ZINDEX: Record<string, number> = {
   job_training: 65,
 };
 
+// Washington state geographic bounds — restrict map panning to WA
+const WA_BOUNDS = {
+  northEast: { latitude: 49.00, longitude: -116.92 },
+  southWest: { latitude: 45.54, longitude: -124.85 },
+};
+
+// Default region: centered on Washington state
+const WA_DEFAULT_REGION: Region = {
+  latitude: 47.4,
+  longitude: -120.5,
+  latitudeDelta: 4.5,
+  longitudeDelta: 8.0,
+};
+
 // Viewport culling — only render markers within 2.6x the visible map area.
 // 0.8 = 80% screen buffer per edge, pre-loads more markers to prevent pop-in
 // when Google Maps fires onRegionChangeComplete with adjusted bounds.
@@ -1004,10 +1018,14 @@ const MapScreen: React.FC = () => {
             longitude: currentLocation.longitude,
             latitudeDelta: 0.05,
             longitudeDelta: 0.05,
-          } : undefined}
+          } : WA_DEFAULT_REGION}
           onMapReady={() => {
             mapReadyRef.current = true;
             setMapReady(true);
+            mapRef.current?.setMapBoundaries?.(
+              WA_BOUNDS.northEast,
+              WA_BOUNDS.southWest,
+            );
           }}
           onRegionChangeComplete={handleRegionChangeComplete}
       >
