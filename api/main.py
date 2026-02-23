@@ -180,6 +180,46 @@ async def health_check():
     }
 
 
+# ========== ADMIN: SEED ENDPOINT ==========
+
+ADMIN_SEED_KEY = os.getenv("ADMIN_SEED_KEY", "urbanaid-seed-2026")
+
+@app.post("/admin/seed", tags=["Admin"])
+async def admin_seed(
+    source: str = Query(default="all", description="Source to seed: all, food, shelters, etc."),
+    key: str = Query(..., description="Admin seed key"),
+):
+    """Trigger database seeding for specific sources."""
+    if key != ADMIN_SEED_KEY:
+        raise HTTPException(status_code=403, detail="Invalid admin key")
+
+    from scripts.seed_wa import SOURCE_FETCHERS, ALL_SOURCES, insert_facilities
+    from models.database import SessionLocal
+
+    valid_sources = ["all"] + ALL_SOURCES
+    if source not in valid_sources:
+        raise HTTPException(status_code=400, detail=f"Invalid source. Valid: {valid_sources}")
+
+    sources_to_run = ALL_SOURCES if source == "all" else [source]
+
+    db = SessionLocal()
+    try:
+        results = {}
+        for src_key in sources_to_run:
+            label, fetcher = SOURCE_FETCHERS[src_key]
+            data = fetcher()
+            if data:
+                inserted, skipped = insert_facilities(db, data)
+                results[label] = {"fetched": len(data), "inserted": inserted, "skipped": skipped}
+            else:
+                results[label] = {"fetched": 0, "inserted": 0, "skipped": 0}
+
+        total = db.query(UtilityModel).count()
+        return {"results": results, "total_utilities": total}
+    finally:
+        db.close()
+
+
 # ========== AUTHENTICATION ENDPOINTS ==========
 
 @app.post("/auth/register", response_model=UserResponse, tags=["Authentication"])
