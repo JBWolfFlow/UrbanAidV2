@@ -11,6 +11,7 @@ interface UtilityState {
   isLoading: boolean;
   error: string | null;
   lastFetchLocation: { latitude: number; longitude: number } | null;
+  lastFetchTimestamp: number | null;
   searchQuery: string;
   activeFilters: Partial<UtilityFilter>;
 
@@ -47,6 +48,7 @@ export const useUtilityStore = create<UtilityState>()(
         isLoading: false,
         error: null,
         lastFetchLocation: null,
+        lastFetchTimestamp: null,
         searchQuery: '',
         activeFilters: {
           radius: 25.0,
@@ -56,8 +58,7 @@ export const useUtilityStore = create<UtilityState>()(
         },
 
         setUtilities: (utilities: Utility[]) => {
-          // Set utilities immediately - no debouncing to prevent race conditions
-          set({ utilities, error: null });
+          set({ utilities, error: null, lastFetchTimestamp: Date.now() });
         },
 
         mergeUtilities: (newUtilities: Utility[]) => {
@@ -253,10 +254,12 @@ export const useUtilityStore = create<UtilityState>()(
       };
     },
     {
-      name: 'utility-storage-v2',
+      name: 'utility-storage-v3',
       storage: createJSONStorage(() => AsyncStorage),
       partialize: (state) => ({
+        utilities: state.utilities,
         activeFilters: state.activeFilters,
+        lastFetchTimestamp: state.lastFetchTimestamp,
       }),
     },
   ),

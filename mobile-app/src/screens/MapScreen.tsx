@@ -474,36 +474,45 @@ const MapScreen: React.FC = () => {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [hasLocationPermission]);
 
-  // Fetch ALL utilities statewide — single call, loads every pin at once.
+  // Fetch ALL utilities statewide — stale-while-revalidate pattern.
+  // If cached pins exist (persisted via Zustand), render them instantly
+  // and refresh from the API in the background. No loading spinner for cached data.
   const fetchAllUtilities = useCallback(async (loc?: { latitude: number; longitude: number }) => {
     if (fetchInProgress.current) {return;}
     fetchInProgress.current = true;
-    setLoading(true);
+
+    const hasCachedData = utilities.length > 0;
+    if (!hasCachedData) {
+      setLoading(true);
+    }
+
     try {
       const results = await apiService.getAllUtilities();
       setUtilities(results || []);
-      console.log(`Loaded ${results?.length || 0} utilities statewide`);
+      if (__DEV__) console.log(`Loaded ${results?.length || 0} utilities statewide`);
     } catch (e: any) {
-      console.warn('Statewide fetch failed, falling back to nearby:', e);
-      const location = loc || currentLocationRef.current;
-      if (location) {
-        try {
-          const results = await apiService.getNearbyUtilities({
-            latitude: location.latitude,
-            longitude: location.longitude,
-            radius: 200.0,
-            limit: 5000,
-          } as any);
-          setUtilities(results || []);
-        } catch (e2: any) {
-          console.warn('Backend fetch failed:', e2);
+      if (__DEV__) console.warn('Statewide fetch failed:', e);
+      if (!hasCachedData) {
+        const location = loc || currentLocationRef.current;
+        if (location) {
+          try {
+            const results = await apiService.getNearbyUtilities({
+              latitude: location.latitude,
+              longitude: location.longitude,
+              radius: 200.0,
+              limit: 5000,
+            } as any);
+            setUtilities(results || []);
+          } catch (e2: any) {
+            if (__DEV__) console.warn('Backend fetch failed:', e2);
+          }
         }
       }
     } finally {
       fetchInProgress.current = false;
       setLoading(false);
     }
-  }, [setUtilities, setLoading]);
+  }, [utilities.length, setUtilities, setLoading]);
 
   // Initial fetch — fires ONCE on mount, loads ALL WA utilities
   useEffect(() => {

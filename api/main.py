@@ -46,8 +46,6 @@ from controllers.user_controller import user_controller
 from controllers.rating_controller import rating_controller
 from services.location_service import LocationService
 from services.notification_service import NotificationService
-from services.hrsa_service import HRSAService
-from services.va_service import VAService
 from services.usda_service import USDAService
 from utils.auth import (
     get_current_user,
@@ -140,8 +138,6 @@ app.add_middleware(
 # Initialize services
 location_service = LocationService()
 notification_service = NotificationService()
-hrsa_service = HRSAService()
-va_service = VAService()
 usda_service = USDAService()
 
 
@@ -627,19 +623,26 @@ async def get_nearby_health_centers(
     longitude: float = Query(..., ge=-180, le=180),
     radius_km: float = Query(25.0, ge=1, le=100),
     limit: int = Query(20, ge=1, le=50),
+    db: Session = Depends(get_db),
 ):
     """
     Find nearby HRSA Federally Qualified Health Centers (FQHCs).
+    Served from cached/seeded database — no live external API calls.
     """
     try:
-        health_centers = await hrsa_service.search_nearby_health_centers(
-            latitude, longitude, radius_km, limit
+        results = await utility_controller.get_nearby_utilities(
+            db=db,
+            latitude=latitude,
+            longitude=longitude,
+            radius_km=radius_km,
+            filters=UtilityFilter(category="health_center"),
+            limit=limit,
         )
         return {
             "status": "success",
-            "data": health_centers,
-            "count": len(health_centers),
-            "source": "HRSA - Health Resources & Services Administration",
+            "data": results,
+            "count": len(results),
+            "source": "Cached — HRSA Health Resources & Services Administration",
         }
     except Exception as e:
         raise HTTPException(
@@ -650,24 +653,47 @@ async def get_nearby_health_centers(
 
 @app.get("/health-centers/state/{state_code}", tags=["Health Centers"])
 async def get_health_centers_by_state(
-    state_code: str, limit: int = Query(100, ge=1, le=500)
+    state_code: str,
+    limit: int = Query(100, ge=1, le=500),
+    db: Session = Depends(get_db),
 ):
-    """Get all HRSA health centers in a specific state."""
+    """Get all HRSA health centers in a specific state. Served from seeded database."""
     if len(state_code) != 2:
         raise HTTPException(
             status_code=400, detail="State code must be 2 characters (e.g., 'CA', 'NY')"
         )
 
     try:
-        health_centers = await hrsa_service.fetch_health_centers_by_state(
-            state_code.upper()
+        all_centers = (
+            db.query(UtilityModel)
+            .filter(
+                UtilityModel.category == "health_center",
+                UtilityModel.is_active == True,
+            )
+            .limit(limit)
+            .all()
         )
+        results = [
+            {
+                "id": u.id,
+                "name": u.name,
+                "category": u.category,
+                "subcategory": u.subcategory,
+                "latitude": u.latitude,
+                "longitude": u.longitude,
+                "description": u.description,
+                "address": u.address,
+                "external_id": u.external_id,
+                "verified": u.verified,
+            }
+            for u in all_centers
+        ]
         return {
             "status": "success",
-            "data": health_centers[:limit],
-            "count": min(len(health_centers), limit),
-            "total_available": len(health_centers),
+            "data": results,
+            "count": len(results),
             "state": state_code.upper(),
+            "source": "Cached — HRSA Health Resources & Services Administration",
         }
     except Exception as e:
         raise HTTPException(
@@ -676,17 +702,32 @@ async def get_health_centers_by_state(
 
 
 @app.get("/health-centers/{center_id}", tags=["Health Centers"])
-async def get_health_center_details(center_id: str):
-    """Get detailed information about a specific HRSA health center."""
+async def get_health_center_details(center_id: str, db: Session = Depends(get_db)):
+    """Get detailed information about a specific HRSA health center. Served from seeded database."""
     try:
         if not center_id.startswith("hrsa_"):
             center_id = f"hrsa_{center_id}"
 
-        health_center = await hrsa_service.get_health_center_details(center_id)
+        health_center = utility_controller.get_utility_by_id(db, center_id)
         if not health_center:
             raise HTTPException(status_code=404, detail="Health center not found")
 
-        return {"status": "success", "data": health_center}
+        return {
+            "status": "success",
+            "data": {
+                "id": health_center.id,
+                "name": health_center.name,
+                "category": health_center.category,
+                "subcategory": health_center.subcategory,
+                "latitude": health_center.latitude,
+                "longitude": health_center.longitude,
+                "description": health_center.description,
+                "address": health_center.address,
+                "external_id": health_center.external_id,
+                "verified": health_center.verified,
+                "wheelchair_accessible": health_center.wheelchair_accessible,
+            },
+        }
     except HTTPException:
         raise
     except Exception as e:
@@ -703,17 +744,24 @@ async def get_nearby_va_facilities(
     radius_miles: float = Query(50.0, ge=1, le=200),
     facility_type: str = Query("health"),
     limit: int = Query(20, ge=1, le=50),
+    db: Session = Depends(get_db),
 ):
-    """Find nearby VA (Veterans Affairs) medical facilities and services."""
+    """Find nearby VA (Veterans Affairs) medical facilities. Served from seeded database."""
     try:
-        va_facilities = await va_service.search_nearby_va_facilities(
-            latitude, longitude, radius_miles, facility_type, limit
+        radius_km = radius_miles * 1.60934
+        results = await utility_controller.get_nearby_utilities(
+            db=db,
+            latitude=latitude,
+            longitude=longitude,
+            radius_km=radius_km,
+            filters=UtilityFilter(category="va_facility"),
+            limit=limit,
         )
         return {
             "status": "success",
-            "data": va_facilities,
-            "count": len(va_facilities),
-            "source": "VA - Department of Veterans Affairs",
+            "data": results,
+            "count": len(results),
+            "source": "Cached — VA Department of Veterans Affairs",
         }
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
@@ -724,38 +772,75 @@ async def get_va_facilities_by_state(
     state_code: str,
     facility_type: str = Query("health"),
     limit: int = Query(200, ge=1, le=500),
+    db: Session = Depends(get_db),
 ):
-    """Get all VA facilities in a specific state."""
+    """Get all VA facilities in a specific state. Served from seeded database."""
     if len(state_code) != 2:
         raise HTTPException(status_code=400, detail="Invalid state code")
 
     try:
-        va_facilities = await va_service.get_va_facilities_by_state(
-            state_code.upper(), facility_type
+        all_facilities = (
+            db.query(UtilityModel)
+            .filter(
+                UtilityModel.category == "va_facility",
+                UtilityModel.is_active == True,
+            )
+            .limit(limit)
+            .all()
         )
+        results = [
+            {
+                "id": u.id,
+                "name": u.name,
+                "category": u.category,
+                "subcategory": u.subcategory,
+                "latitude": u.latitude,
+                "longitude": u.longitude,
+                "description": u.description,
+                "address": u.address,
+                "external_id": u.external_id,
+                "verified": u.verified,
+            }
+            for u in all_facilities
+        ]
         return {
             "status": "success",
-            "data": va_facilities[:limit],
-            "count": min(len(va_facilities), limit),
-            "total_available": len(va_facilities),
+            "data": results,
+            "count": len(results),
             "state": state_code.upper(),
+            "source": "Cached — VA Department of Veterans Affairs",
         }
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
 
 @app.get("/va-facilities/{facility_id}", tags=["VA Facilities"])
-async def get_va_facility_details(facility_id: str):
-    """Get detailed information about a specific VA facility."""
+async def get_va_facility_details(facility_id: str, db: Session = Depends(get_db)):
+    """Get detailed information about a specific VA facility. Served from seeded database."""
     try:
         if not facility_id.startswith("va_"):
             facility_id = f"va_{facility_id}"
 
-        va_facility = await va_service.get_va_facility_details(facility_id)
+        va_facility = utility_controller.get_utility_by_id(db, facility_id)
         if not va_facility:
             raise HTTPException(status_code=404, detail="VA facility not found")
 
-        return {"status": "success", "data": va_facility}
+        return {
+            "status": "success",
+            "data": {
+                "id": va_facility.id,
+                "name": va_facility.name,
+                "category": va_facility.category,
+                "subcategory": va_facility.subcategory,
+                "latitude": va_facility.latitude,
+                "longitude": va_facility.longitude,
+                "description": va_facility.description,
+                "address": va_facility.address,
+                "external_id": va_facility.external_id,
+                "verified": va_facility.verified,
+                "wheelchair_accessible": va_facility.wheelchair_accessible,
+            },
+        }
     except HTTPException:
         raise
     except Exception as e:
