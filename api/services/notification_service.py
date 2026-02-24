@@ -15,7 +15,6 @@ Features:
 """
 
 import os
-import json
 import asyncio
 import logging
 from datetime import datetime, timedelta
@@ -34,6 +33,7 @@ logger = logging.getLogger(__name__)
 
 class NotificationChannel(str, Enum):
     """Supported notification channels."""
+
     EMAIL = "email"
     PUSH = "push"
     IN_APP = "in_app"
@@ -42,6 +42,7 @@ class NotificationChannel(str, Enum):
 
 class NotificationPriority(str, Enum):
     """Notification priority levels."""
+
     LOW = "low"
     NORMAL = "normal"
     HIGH = "high"
@@ -50,6 +51,7 @@ class NotificationPriority(str, Enum):
 
 class NotificationStatus(str, Enum):
     """Notification delivery status."""
+
     PENDING = "pending"
     SENT = "sent"
     DELIVERED = "delivered"
@@ -60,6 +62,7 @@ class NotificationStatus(str, Enum):
 @dataclass
 class NotificationResult:
     """Result of a notification attempt."""
+
     success: bool
     channel: NotificationChannel
     message_id: Optional[str] = None
@@ -71,6 +74,7 @@ class NotificationResult:
 @dataclass
 class NotificationPayload:
     """Notification content payload."""
+
     title: str
     body: str
     data: Dict[str, Any] = field(default_factory=dict)
@@ -109,7 +113,9 @@ class NotificationService:
         self.twilio_sid = os.getenv("TWILIO_ACCOUNT_SID", "")
         self.twilio_token = os.getenv("TWILIO_AUTH_TOKEN", "")
         self.twilio_phone = os.getenv("TWILIO_PHONE_NUMBER", "")
-        self._sms_enabled = bool(self.twilio_sid and self.twilio_token and self.twilio_phone)
+        self._sms_enabled = bool(
+            self.twilio_sid and self.twilio_token and self.twilio_phone
+        )
 
         # HTTP session for API calls
         self._session: Optional[httpx.AsyncClient] = None
@@ -119,7 +125,7 @@ class NotificationService:
             NotificationChannel.EMAIL: 10,
             NotificationChannel.PUSH: 50,
             NotificationChannel.SMS: 5,
-            NotificationChannel.IN_APP: 100
+            NotificationChannel.IN_APP: 100,
         }
         self._notification_counts: Dict[str, Dict[str, int]] = {}
         self._count_reset_time: Dict[str, datetime] = {}
@@ -150,7 +156,7 @@ class NotificationService:
         body_html: str,
         body_text: Optional[str] = None,
         attachments: Optional[List[Dict[str, Any]]] = None,
-        reply_to: Optional[str] = None
+        reply_to: Optional[str] = None,
     ) -> NotificationResult:
         """
         Send an email notification.
@@ -171,7 +177,7 @@ class NotificationService:
             return NotificationResult(
                 success=False,
                 channel=NotificationChannel.EMAIL,
-                error="Email not configured"
+                error="Email not configured",
             )
 
         # Check rate limit
@@ -179,7 +185,7 @@ class NotificationService:
             return NotificationResult(
                 success=False,
                 channel=NotificationChannel.EMAIL,
-                error="Rate limit exceeded"
+                error="Rate limit exceeded",
             )
 
         # Use SendGrid if configured, otherwise SMTP
@@ -198,7 +204,7 @@ class NotificationService:
         subject: str,
         body_html: str,
         body_text: Optional[str],
-        attachments: Optional[List[Dict[str, Any]]]
+        attachments: Optional[List[Dict[str, Any]]],
     ) -> NotificationResult:
         """Send email via SMTP."""
         try:
@@ -222,18 +228,13 @@ class NotificationService:
                     encoders.encode_base64(part)
                     part.add_header(
                         "Content-Disposition",
-                        f"attachment; filename={attachment['filename']}"
+                        f"attachment; filename={attachment['filename']}",
                     )
                     msg.attach(part)
 
             # Send via SMTP (run in thread pool to avoid blocking)
             loop = asyncio.get_event_loop()
-            await loop.run_in_executor(
-                None,
-                self._smtp_send,
-                to_email,
-                msg
-            )
+            await loop.run_in_executor(None, self._smtp_send, to_email, msg)
 
             self._increment_rate_limit(to_email, NotificationChannel.EMAIL)
 
@@ -241,15 +242,13 @@ class NotificationService:
             return NotificationResult(
                 success=True,
                 channel=NotificationChannel.EMAIL,
-                message_id=msg["Message-ID"]
+                message_id=msg["Message-ID"],
             )
 
         except Exception as e:
             logger.error(f"Failed to send email to {to_email}: {e}")
             return NotificationResult(
-                success=False,
-                channel=NotificationChannel.EMAIL,
-                error=str(e)
+                success=False, channel=NotificationChannel.EMAIL, error=str(e)
             )
 
     def _smtp_send(self, to_email: str, msg: MIMEMultipart):
@@ -265,7 +264,7 @@ class NotificationService:
         subject: str,
         body_html: str,
         body_text: Optional[str],
-        reply_to: Optional[str]
+        reply_to: Optional[str],
     ) -> NotificationResult:
         """Send email via SendGrid API."""
         try:
@@ -273,24 +272,15 @@ class NotificationService:
 
             payload = {
                 "personalizations": [{"to": [{"email": to_email}]}],
-                "from": {
-                    "email": self.smtp_from_email,
-                    "name": self.smtp_from_name
-                },
+                "from": {"email": self.smtp_from_email, "name": self.smtp_from_name},
                 "subject": subject,
-                "content": []
+                "content": [],
             }
 
             if body_text:
-                payload["content"].append({
-                    "type": "text/plain",
-                    "value": body_text
-                })
+                payload["content"].append({"type": "text/plain", "value": body_text})
 
-            payload["content"].append({
-                "type": "text/html",
-                "value": body_html
-            })
+            payload["content"].append({"type": "text/html", "value": body_html})
 
             if reply_to:
                 payload["reply_to"] = {"email": reply_to}
@@ -300,8 +290,8 @@ class NotificationService:
                 json=payload,
                 headers={
                     "Authorization": f"Bearer {self.sendgrid_api_key}",
-                    "Content-Type": "application/json"
-                }
+                    "Content-Type": "application/json",
+                },
             )
 
             if response.status_code in (200, 202):
@@ -312,23 +302,19 @@ class NotificationService:
                 return NotificationResult(
                     success=True,
                     channel=NotificationChannel.EMAIL,
-                    message_id=message_id
+                    message_id=message_id,
                 )
             else:
                 error = response.text
                 logger.error(f"SendGrid error: {error}")
                 return NotificationResult(
-                    success=False,
-                    channel=NotificationChannel.EMAIL,
-                    error=error
+                    success=False, channel=NotificationChannel.EMAIL, error=error
                 )
 
         except Exception as e:
             logger.error(f"SendGrid exception: {e}")
             return NotificationResult(
-                success=False,
-                channel=NotificationChannel.EMAIL,
-                error=str(e)
+                success=False, channel=NotificationChannel.EMAIL, error=str(e)
             )
 
     # =========================================================================
@@ -339,7 +325,7 @@ class NotificationService:
         self,
         device_token: str,
         payload: NotificationPayload,
-        priority: NotificationPriority = NotificationPriority.NORMAL
+        priority: NotificationPriority = NotificationPriority.NORMAL,
     ) -> NotificationResult:
         """
         Send a push notification via Firebase Cloud Messaging.
@@ -357,7 +343,7 @@ class NotificationService:
             return NotificationResult(
                 success=False,
                 channel=NotificationChannel.PUSH,
-                error="Push notifications not configured"
+                error="Push notifications not configured",
             )
 
         # Check rate limit
@@ -365,7 +351,7 @@ class NotificationService:
             return NotificationResult(
                 success=False,
                 channel=NotificationChannel.PUSH,
-                error="Rate limit exceeded"
+                error="Rate limit exceeded",
             )
 
         try:
@@ -373,12 +359,11 @@ class NotificationService:
 
             fcm_payload = {
                 "to": device_token,
-                "notification": {
-                    "title": payload.title,
-                    "body": payload.body
-                },
+                "notification": {"title": payload.title, "body": payload.body},
                 "data": payload.data,
-                "priority": "high" if priority in (NotificationPriority.HIGH, NotificationPriority.URGENT) else "normal"
+                "priority": "high"
+                if priority in (NotificationPriority.HIGH, NotificationPriority.URGENT)
+                else "normal",
             }
 
             if payload.image_url:
@@ -392,8 +377,8 @@ class NotificationService:
                 json=fcm_payload,
                 headers={
                     "Authorization": f"key={self.fcm_server_key}",
-                    "Content-Type": "application/json"
-                }
+                    "Content-Type": "application/json",
+                },
             )
 
             result = response.json()
@@ -405,30 +390,26 @@ class NotificationService:
                 return NotificationResult(
                     success=True,
                     channel=NotificationChannel.PUSH,
-                    message_id=str(result.get("message_id", ""))
+                    message_id=str(result.get("message_id", "")),
                 )
             else:
                 error = result.get("results", [{}])[0].get("error", "Unknown error")
                 logger.error(f"FCM error: {error}")
                 return NotificationResult(
-                    success=False,
-                    channel=NotificationChannel.PUSH,
-                    error=error
+                    success=False, channel=NotificationChannel.PUSH, error=error
                 )
 
         except Exception as e:
             logger.error(f"Push notification exception: {e}")
             return NotificationResult(
-                success=False,
-                channel=NotificationChannel.PUSH,
-                error=str(e)
+                success=False, channel=NotificationChannel.PUSH, error=str(e)
             )
 
     async def send_push_to_topic(
         self,
         topic: str,
         payload: NotificationPayload,
-        priority: NotificationPriority = NotificationPriority.NORMAL
+        priority: NotificationPriority = NotificationPriority.NORMAL,
     ) -> NotificationResult:
         """
         Send a push notification to all devices subscribed to a topic.
@@ -445,7 +426,7 @@ class NotificationService:
             return NotificationResult(
                 success=False,
                 channel=NotificationChannel.PUSH,
-                error="Push notifications not configured"
+                error="Push notifications not configured",
             )
 
         try:
@@ -453,12 +434,11 @@ class NotificationService:
 
             fcm_payload = {
                 "to": f"/topics/{topic}",
-                "notification": {
-                    "title": payload.title,
-                    "body": payload.body
-                },
+                "notification": {"title": payload.title, "body": payload.body},
                 "data": payload.data,
-                "priority": "high" if priority in (NotificationPriority.HIGH, NotificationPriority.URGENT) else "normal"
+                "priority": "high"
+                if priority in (NotificationPriority.HIGH, NotificationPriority.URGENT)
+                else "normal",
             }
 
             response = await session.post(
@@ -466,8 +446,8 @@ class NotificationService:
                 json=fcm_payload,
                 headers={
                     "Authorization": f"key={self.fcm_server_key}",
-                    "Content-Type": "application/json"
-                }
+                    "Content-Type": "application/json",
+                },
             )
 
             result = response.json()
@@ -477,33 +457,25 @@ class NotificationService:
                 return NotificationResult(
                     success=True,
                     channel=NotificationChannel.PUSH,
-                    message_id=str(result["message_id"])
+                    message_id=str(result["message_id"]),
                 )
             else:
                 error = result.get("error", "Unknown error")
                 return NotificationResult(
-                    success=False,
-                    channel=NotificationChannel.PUSH,
-                    error=error
+                    success=False, channel=NotificationChannel.PUSH, error=error
                 )
 
         except Exception as e:
             logger.error(f"Topic push exception: {e}")
             return NotificationResult(
-                success=False,
-                channel=NotificationChannel.PUSH,
-                error=str(e)
+                success=False, channel=NotificationChannel.PUSH, error=str(e)
             )
 
     # =========================================================================
     # SMS Notifications
     # =========================================================================
 
-    async def send_sms(
-        self,
-        phone_number: str,
-        message: str
-    ) -> NotificationResult:
+    async def send_sms(self, phone_number: str, message: str) -> NotificationResult:
         """
         Send an SMS notification via Twilio.
 
@@ -519,7 +491,7 @@ class NotificationService:
             return NotificationResult(
                 success=False,
                 channel=NotificationChannel.SMS,
-                error="SMS not configured"
+                error="SMS not configured",
             )
 
         # Check rate limit
@@ -527,7 +499,7 @@ class NotificationService:
             return NotificationResult(
                 success=False,
                 channel=NotificationChannel.SMS,
-                error="Rate limit exceeded"
+                error="Rate limit exceeded",
             )
 
         # Truncate message if too long
@@ -539,12 +511,8 @@ class NotificationService:
 
             response = await session.post(
                 f"https://api.twilio.com/2010-04-01/Accounts/{self.twilio_sid}/Messages.json",
-                data={
-                    "To": phone_number,
-                    "From": self.twilio_phone,
-                    "Body": message
-                },
-                auth=(self.twilio_sid, self.twilio_token)
+                data={"To": phone_number, "From": self.twilio_phone, "Body": message},
+                auth=(self.twilio_sid, self.twilio_token),
             )
 
             result = response.json()
@@ -556,23 +524,19 @@ class NotificationService:
                 return NotificationResult(
                     success=True,
                     channel=NotificationChannel.SMS,
-                    message_id=result.get("sid", "")
+                    message_id=result.get("sid", ""),
                 )
             else:
                 error = result.get("message", "Unknown error")
                 logger.error(f"Twilio error: {error}")
                 return NotificationResult(
-                    success=False,
-                    channel=NotificationChannel.SMS,
-                    error=error
+                    success=False, channel=NotificationChannel.SMS, error=error
                 )
 
         except Exception as e:
             logger.error(f"SMS exception: {e}")
             return NotificationResult(
-                success=False,
-                channel=NotificationChannel.SMS,
-                error=str(e)
+                success=False, channel=NotificationChannel.SMS, error=str(e)
             )
 
     # =========================================================================
@@ -625,7 +589,7 @@ class NotificationService:
                     </ul>
                     <p><a href="{app_url}">Get Started</a></p>
                 """,
-                "text": "Welcome to UrbanAid, {name}! Find nearby social services at {app_url}"
+                "text": "Welcome to UrbanAid, {name}! Find nearby social services at {app_url}",
             },
             "password_reset": {
                 "subject": "Reset Your UrbanAid Password",
@@ -636,7 +600,7 @@ class NotificationService:
                     <p>This link expires in 1 hour.</p>
                     <p>If you didn't request this, you can safely ignore this email.</p>
                 """,
-                "text": "Reset your password: {reset_link} (expires in 1 hour)"
+                "text": "Reset your password: {reset_link} (expires in 1 hour)",
             },
             "email_verification": {
                 "subject": "Verify Your UrbanAid Email",
@@ -645,7 +609,7 @@ class NotificationService:
                     <p>Please verify your email address by clicking the link below:</p>
                     <p><a href="{verification_link}">Verify Email</a></p>
                 """,
-                "text": "Verify your email: {verification_link}"
+                "text": "Verify your email: {verification_link}",
             },
             "utility_update": {
                 "subject": "Update on {utility_name}",
@@ -655,7 +619,7 @@ class NotificationService:
                     <p>{update_message}</p>
                     <p><a href="{utility_url}">View Details</a></p>
                 """,
-                "text": "{utility_name} update: {update_message}"
+                "text": "{utility_name} update: {update_message}",
             },
             "new_rating": {
                 "subject": "New Rating on Your Listing",
@@ -665,15 +629,12 @@ class NotificationService:
                     <p>Comment: "{comment}"</p>
                     <p><a href="{utility_url}">View Ratings</a></p>
                 """,
-                "text": "New {rating}-star rating on {utility_name}: {comment}"
-            }
+                "text": "New {rating}-star rating on {utility_name}: {comment}",
+            },
         }
 
     async def send_template_email(
-        self,
-        to_email: str,
-        template_name: str,
-        variables: Dict[str, Any]
+        self, to_email: str, template_name: str, variables: Dict[str, Any]
     ) -> NotificationResult:
         """
         Send an email using a predefined template.
@@ -691,7 +652,7 @@ class NotificationService:
             return NotificationResult(
                 success=False,
                 channel=NotificationChannel.EMAIL,
-                error=f"Template '{template_name}' not found"
+                error=f"Template '{template_name}' not found",
             )
 
         subject = template["subject"].format(**variables)
@@ -704,24 +665,29 @@ class NotificationService:
     # Convenience Methods
     # =========================================================================
 
-    async def send_welcome_email(self, to_email: str, name: str, app_url: str = "https://urbanaid.org") -> NotificationResult:
+    async def send_welcome_email(
+        self, to_email: str, name: str, app_url: str = "https://urbanaid.org"
+    ) -> NotificationResult:
         """Send welcome email to new user."""
-        return await self.send_template_email(to_email, "welcome", {
-            "name": name,
-            "app_url": app_url
-        })
+        return await self.send_template_email(
+            to_email, "welcome", {"name": name, "app_url": app_url}
+        )
 
-    async def send_password_reset_email(self, to_email: str, reset_link: str) -> NotificationResult:
+    async def send_password_reset_email(
+        self, to_email: str, reset_link: str
+    ) -> NotificationResult:
         """Send password reset email."""
-        return await self.send_template_email(to_email, "password_reset", {
-            "reset_link": reset_link
-        })
+        return await self.send_template_email(
+            to_email, "password_reset", {"reset_link": reset_link}
+        )
 
-    async def send_verification_email(self, to_email: str, verification_link: str) -> NotificationResult:
+    async def send_verification_email(
+        self, to_email: str, verification_link: str
+    ) -> NotificationResult:
         """Send email verification link."""
-        return await self.send_template_email(to_email, "email_verification", {
-            "verification_link": verification_link
-        })
+        return await self.send_template_email(
+            to_email, "email_verification", {"verification_link": verification_link}
+        )
 
     def get_channel_status(self) -> Dict[str, bool]:
         """Get configuration status of all notification channels."""
@@ -729,7 +695,7 @@ class NotificationService:
             "email_smtp": self._email_enabled,
             "email_sendgrid": self._sendgrid_enabled,
             "push": self._push_enabled,
-            "sms": self._sms_enabled
+            "sms": self._sms_enabled,
         }
 
 

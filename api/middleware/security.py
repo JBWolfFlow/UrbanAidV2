@@ -83,7 +83,7 @@ class SecurityHeadersMiddleware(BaseHTTPMiddleware):
             "connect-src 'self'",
             "frame-ancestors 'none'",
             "base-uri 'self'",
-            "form-action 'self'"
+            "form-action 'self'",
         ]
         response.headers["Content-Security-Policy"] = "; ".join(csp_directives)
 
@@ -96,13 +96,17 @@ class SecurityHeadersMiddleware(BaseHTTPMiddleware):
             "camera=()",  # Disable camera
             "microphone=()",  # Disable microphone
             "payment=()",  # Disable payment APIs
-            "usb=()"  # Disable USB
+            "usb=()",  # Disable USB
         ]
         response.headers["Permissions-Policy"] = ", ".join(permissions)
 
         # Prevent caching of sensitive data
-        if request.url.path.startswith("/auth") or request.url.path.startswith("/admin"):
-            response.headers["Cache-Control"] = "no-store, no-cache, must-revalidate, private"
+        if request.url.path.startswith("/auth") or request.url.path.startswith(
+            "/admin"
+        ):
+            response.headers["Cache-Control"] = (
+                "no-store, no-cache, must-revalidate, private"
+            )
             response.headers["Pragma"] = "no-cache"
 
         return response
@@ -117,6 +121,6 @@ def get_cors_origins() -> list:
     """
     origins_str = os.getenv(
         "ALLOWED_ORIGINS",
-        "http://localhost:3000,http://localhost:8081,http://localhost:19006"
+        "http://localhost:3000,http://localhost:8081,http://localhost:19006",
     )
     return [origin.strip() for origin in origins_str.split(",") if origin.strip()]

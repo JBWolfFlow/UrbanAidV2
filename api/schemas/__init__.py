@@ -1,1 +1,1 @@
-"""Schemas package for UrbanAid API""" 
+"""Schemas package for UrbanAid API"""

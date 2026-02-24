@@ -17,7 +17,7 @@ from .location_service import (
     Coordinates,
     BoundingBox,
     EARTH_RADIUS_KM,
-    EARTH_RADIUS_MI
+    EARTH_RADIUS_MI,
 )
 
 from .notification_service import (
@@ -27,7 +27,7 @@ from .notification_service import (
     NotificationPriority,
     NotificationStatus,
     NotificationResult,
-    NotificationPayload
+    NotificationPayload,
 )
 
 from .hrsa_service import HRSAService
@@ -43,7 +43,6 @@ __all__ = [
     "BoundingBox",
     "EARTH_RADIUS_KM",
     "EARTH_RADIUS_MI",
-
     # Notification Service
     "NotificationService",
     "notification_service",
@@ -52,7 +51,6 @@ __all__ = [
     "NotificationStatus",
     "NotificationResult",
     "NotificationPayload",
-
     # External API Services
     "HRSAService",
     "VAService",

@@ -11,14 +11,15 @@ This controller provides:
 from typing import List, Optional, Dict, Any
 from sqlalchemy.orm import Session
 from sqlalchemy import func
-from sqlalchemy.exc import IntegrityError
 
 from models.rating import Rating
 from models.utility import Utility
 from schemas.rating import RatingCreate, RatingUpdate
 from utils.exceptions import (
-    RatingNotFoundError, UtilityNotFoundError,
-    UnauthorizedError, ValidationError
+    RatingNotFoundError,
+    UtilityNotFoundError,
+    UnauthorizedError,
+    ValidationError,
 )
 
 
@@ -40,11 +41,7 @@ class RatingController:
     # =========================================================================
 
     def create_rating(
-        self,
-        db: Session,
-        utility_id: str,
-        rating_data: RatingCreate,
-        user_id: int
+        self, db: Session, utility_id: str, rating_data: RatingCreate, user_id: int
     ) -> Rating:
         """
         Create a new rating for a utility.
@@ -73,13 +70,16 @@ class RatingController:
             raise UtilityNotFoundError()
 
         # Check for existing rating by this user
-        existing = db.query(Rating).filter(
-            Rating.utility_id == utility_id,
-            Rating.user_id == user_id
-        ).first()
+        existing = (
+            db.query(Rating)
+            .filter(Rating.utility_id == utility_id, Rating.user_id == user_id)
+            .first()
+        )
 
         if existing:
-            raise ValidationError("You have already rated this utility. Use update to modify your rating.")
+            raise ValidationError(
+                "You have already rated this utility. Use update to modify your rating."
+            )
 
         # Create rating
         rating = Rating(
@@ -87,7 +87,7 @@ class RatingController:
             user_id=user_id,
             rating=rating_data.rating,
             comment=rating_data.comment,
-            is_active=True
+            is_active=True,
         )
 
         db.add(rating)
@@ -100,11 +100,7 @@ class RatingController:
         return rating
 
     def update_rating(
-        self,
-        db: Session,
-        rating_id: int,
-        rating_data: RatingUpdate,
-        user_id: int
+        self, db: Session, rating_id: int, rating_data: RatingUpdate, user_id: int
     ) -> Rating:
         """
         Update an existing rating.
@@ -149,11 +145,7 @@ class RatingController:
         return rating
 
     def delete_rating(
-        self,
-        db: Session,
-        rating_id: int,
-        user_id: int,
-        is_admin: bool = False
+        self, db: Session, rating_id: int, user_id: int, is_admin: bool = False
     ) -> bool:
         """
         Delete a rating (soft delete).
@@ -198,17 +190,14 @@ class RatingController:
 
     def get_rating_by_id(self, db: Session, rating_id: int) -> Optional[Rating]:
         """Get a rating by its ID."""
-        return db.query(Rating).filter(
-            Rating.id == rating_id,
-            Rating.is_active == True
-        ).first()
+        return (
+            db.query(Rating)
+            .filter(Rating.id == rating_id, Rating.is_active == True)
+            .first()
+        )
 
     def get_utility_ratings(
-        self,
-        db: Session,
-        utility_id: str,
-        limit: int = 20,
-        offset: int = 0
+        self, db: Session, utility_id: str, limit: int = 20, offset: int = 0
     ) -> List[Dict[str, Any]]:
         """
         Get all ratings for a utility.
@@ -222,12 +211,14 @@ class RatingController:
         Returns:
             List of rating dictionaries with user info
         """
-        ratings = db.query(Rating).filter(
-            Rating.utility_id == utility_id,
-            Rating.is_active == True
-        ).order_by(
-            Rating.created_at.desc()
-        ).offset(offset).limit(limit).all()
+        ratings = (
+            db.query(Rating)
+            .filter(Rating.utility_id == utility_id, Rating.is_active == True)
+            .order_by(Rating.created_at.desc())
+            .offset(offset)
+            .limit(limit)
+            .all()
+        )
 
         return [
             {
@@ -236,17 +227,13 @@ class RatingController:
                 "comment": r.comment,
                 "user_id": r.user_id,
                 "created_at": r.created_at.isoformat() if r.created_at else None,
-                "updated_at": r.updated_at.isoformat() if r.updated_at else None
+                "updated_at": r.updated_at.isoformat() if r.updated_at else None,
             }
             for r in ratings
         ]
 
     def get_user_ratings(
-        self,
-        db: Session,
-        user_id: int,
-        limit: int = 50,
-        offset: int = 0
+        self, db: Session, user_id: int, limit: int = 50, offset: int = 0
     ) -> List[Dict[str, Any]]:
         """
         Get all ratings by a user.
@@ -260,12 +247,14 @@ class RatingController:
         Returns:
             List of rating dictionaries with utility info
         """
-        ratings = db.query(Rating).filter(
-            Rating.user_id == user_id,
-            Rating.is_active == True
-        ).order_by(
-            Rating.created_at.desc()
-        ).offset(offset).limit(limit).all()
+        ratings = (
+            db.query(Rating)
+            .filter(Rating.user_id == user_id, Rating.is_active == True)
+            .order_by(Rating.created_at.desc())
+            .offset(offset)
+            .limit(limit)
+            .all()
+        )
 
         return [
             {
@@ -273,32 +262,31 @@ class RatingController:
                 "utility_id": r.utility_id,
                 "rating": r.rating,
                 "comment": r.comment,
-                "created_at": r.created_at.isoformat() if r.created_at else None
+                "created_at": r.created_at.isoformat() if r.created_at else None,
             }
             for r in ratings
         ]
 
     def get_user_rating_for_utility(
-        self,
-        db: Session,
-        utility_id: str,
-        user_id: int
+        self, db: Session, utility_id: str, user_id: int
     ) -> Optional[Rating]:
         """Get a user's rating for a specific utility."""
-        return db.query(Rating).filter(
-            Rating.utility_id == utility_id,
-            Rating.user_id == user_id,
-            Rating.is_active == True
-        ).first()
+        return (
+            db.query(Rating)
+            .filter(
+                Rating.utility_id == utility_id,
+                Rating.user_id == user_id,
+                Rating.is_active == True,
+            )
+            .first()
+        )
 
     # =========================================================================
     # Statistics
     # =========================================================================
 
     def calculate_utility_rating_stats(
-        self,
-        db: Session,
-        utility_id: str
+        self, db: Session, utility_id: str
     ) -> Dict[str, Any]:
         """
         Calculate rating statistics for a utility.
@@ -306,24 +294,25 @@ class RatingController:
         Returns:
             Dictionary with average, count, and distribution
         """
-        stats = db.query(
-            func.avg(Rating.rating).label("average"),
-            func.count(Rating.id).label("count")
-        ).filter(
-            Rating.utility_id == utility_id,
-            Rating.is_active == True
-        ).first()
+        stats = (
+            db.query(
+                func.avg(Rating.rating).label("average"),
+                func.count(Rating.id).label("count"),
+            )
+            .filter(Rating.utility_id == utility_id, Rating.is_active == True)
+            .first()
+        )
 
         # Get distribution (count of each rating value)
-        distribution = db.query(
-            func.floor(Rating.rating).label("star"),
-            func.count(Rating.id).label("count")
-        ).filter(
-            Rating.utility_id == utility_id,
-            Rating.is_active == True
-        ).group_by(
-            func.floor(Rating.rating)
-        ).all()
+        distribution = (
+            db.query(
+                func.floor(Rating.rating).label("star"),
+                func.count(Rating.id).label("count"),
+            )
+            .filter(Rating.utility_id == utility_id, Rating.is_active == True)
+            .group_by(func.floor(Rating.rating))
+            .all()
+        )
 
         distribution_dict = {int(star): count for star, count in distribution}
 
@@ -335,8 +324,8 @@ class RatingController:
                 "2": distribution_dict.get(2, 0),
                 "3": distribution_dict.get(3, 0),
                 "4": distribution_dict.get(4, 0),
-                "5": distribution_dict.get(5, 0)
-            }
+                "5": distribution_dict.get(5, 0),
+            },
         }
 
     def _update_utility_rating_stats(self, db: Session, utility_id: str) -> None:
@@ -357,12 +346,7 @@ class RatingController:
     # Moderation
     # =========================================================================
 
-    def flag_rating(
-        self,
-        db: Session,
-        rating_id: int,
-        reason: str
-    ) -> bool:
+    def flag_rating(self, db: Session, rating_id: int, reason: str) -> bool:
         """
         Flag a rating for moderation review.
 
@@ -385,16 +369,16 @@ class RatingController:
         return True
 
     def get_flagged_ratings(
-        self,
-        db: Session,
-        limit: int = 50,
-        offset: int = 0
+        self, db: Session, limit: int = 50, offset: int = 0
     ) -> List[Rating]:
         """Get all flagged ratings for moderation."""
-        return db.query(Rating).filter(
-            Rating.is_flagged == True,
-            Rating.is_active == True
-        ).offset(offset).limit(limit).all()
+        return (
+            db.query(Rating)
+            .filter(Rating.is_flagged == True, Rating.is_active == True)
+            .offset(offset)
+            .limit(limit)
+            .all()
+        )
 
 
 # Singleton instance for dependency injection

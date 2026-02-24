@@ -16,19 +16,25 @@ from sqlalchemy import or_
 
 from models.user import User, UserRole
 from schemas.user import (
-    UserCreate, UserUpdate, UserRoleUpdate, PasswordChange,
-    UserResponse, UserListResponse, TokenResponse
+    UserCreate,
+    UserUpdate,
+    UserRoleUpdate,
+    PasswordChange,
+    TokenResponse,
 )
 from utils.auth import (
-    get_password_hash, verify_password,
-    create_access_token, create_refresh_token,
-    ACCESS_TOKEN_EXPIRE_MINUTES
+    get_password_hash,
+    verify_password,
+    create_access_token,
+    create_refresh_token,
+    ACCESS_TOKEN_EXPIRE_MINUTES,
 )
 from utils.exceptions import (
-    UserNotFoundError, UserAlreadyExistsError,
-    UsernameAlreadyExistsError, EmailAlreadyExistsError,
-    InvalidCredentialsError, InactiveUserError,
-    PasswordMismatchError, InvalidPasswordError
+    UserNotFoundError,
+    UsernameAlreadyExistsError,
+    EmailAlreadyExistsError,
+    InvalidCredentialsError,
+    InactiveUserError,
 )
 
 
@@ -78,7 +84,9 @@ class UserController:
         """
         return db.query(User).filter(User.email == email).first()
 
-    def get_user_by_username_or_email(self, db: Session, identifier: str) -> Optional[User]:
+    def get_user_by_username_or_email(
+        self, db: Session, identifier: str
+    ) -> Optional[User]:
         """
         Retrieve a user by username or email (for login flexibility).
 
@@ -89,9 +97,11 @@ class UserController:
         Returns:
             User object if found, None otherwise
         """
-        return db.query(User).filter(
-            or_(User.username == identifier, User.email == identifier)
-        ).first()
+        return (
+            db.query(User)
+            .filter(or_(User.username == identifier, User.email == identifier))
+            .first()
+        )
 
     def get_users(
         self,
@@ -99,7 +109,7 @@ class UserController:
         skip: int = 0,
         limit: int = 100,
         role: Optional[str] = None,
-        is_active: Optional[bool] = None
+        is_active: Optional[bool] = None,
     ) -> List[User]:
         """
         Retrieve paginated list of users with optional filters.
@@ -124,10 +134,7 @@ class UserController:
         return query.offset(skip).limit(limit).all()
 
     def count_users(
-        self,
-        db: Session,
-        role: Optional[str] = None,
-        is_active: Optional[bool] = None
+        self, db: Session, role: Optional[str] = None, is_active: Optional[bool] = None
     ) -> int:
         """Count total users matching filters."""
         query = db.query(User)
@@ -177,7 +184,7 @@ class UserController:
             hashed_password=hashed_password,
             role=UserRole.USER.value,
             is_active=True,
-            email_verified=False
+            email_verified=False,
         )
 
         db.add(db_user)
@@ -191,10 +198,7 @@ class UserController:
     # =========================================================================
 
     def authenticate_user(
-        self,
-        db: Session,
-        username: str,
-        password: str
+        self, db: Session, username: str, password: str
     ) -> tuple[User, TokenResponse]:
         """
         Authenticate a user and generate tokens.
@@ -232,11 +236,7 @@ class UserController:
         user.last_login = datetime.now(timezone.utc)
 
         # Generate tokens
-        token_data = {
-            "user_id": user.id,
-            "username": user.username,
-            "role": user.role
-        }
+        token_data = {"user_id": user.id, "username": user.username, "role": user.role}
 
         access_token = create_access_token(token_data)
         refresh_token = create_refresh_token({"user_id": user.id})
@@ -250,14 +250,11 @@ class UserController:
             access_token=access_token,
             refresh_token=refresh_token,
             token_type="bearer",
-            expires_in=ACCESS_TOKEN_EXPIRE_MINUTES * 60
+            expires_in=ACCESS_TOKEN_EXPIRE_MINUTES * 60,
         )
 
     def refresh_tokens(
-        self,
-        db: Session,
-        user_id: int,
-        current_refresh_token: str
+        self, db: Session, user_id: int, current_refresh_token: str
     ) -> TokenResponse:
         """
         Refresh access token using a valid refresh token.
@@ -290,11 +287,7 @@ class UserController:
             raise InactiveUserError()
 
         # Generate new tokens
-        token_data = {
-            "user_id": user.id,
-            "username": user.username,
-            "role": user.role
-        }
+        token_data = {"user_id": user.id, "username": user.username, "role": user.role}
 
         access_token = create_access_token(token_data)
         new_refresh_token = create_refresh_token({"user_id": user.id})
@@ -307,7 +300,7 @@ class UserController:
             access_token=access_token,
             refresh_token=new_refresh_token,
             token_type="bearer",
-            expires_in=ACCESS_TOKEN_EXPIRE_MINUTES * 60
+            expires_in=ACCESS_TOKEN_EXPIRE_MINUTES * 60,
         )
 
     def logout_user(self, db: Session, user_id: int) -> bool:
@@ -332,12 +325,7 @@ class UserController:
     # User Updates
     # =========================================================================
 
-    def update_user(
-        self,
-        db: Session,
-        user_id: int,
-        updates: UserUpdate
-    ) -> User:
+    def update_user(self, db: Session, user_id: int, updates: UserUpdate) -> User:
         """
         Update user profile information.
 
@@ -378,11 +366,7 @@ class UserController:
         return user
 
     def update_user_role(
-        self,
-        db: Session,
-        user_id: int,
-        role_update: UserRoleUpdate,
-        admin_user_id: int
+        self, db: Session, user_id: int, role_update: UserRoleUpdate, admin_user_id: int
     ) -> User:
         """
         Update a user's role (admin only).
@@ -413,10 +397,7 @@ class UserController:
     # =========================================================================
 
     def change_password(
-        self,
-        db: Session,
-        user_id: int,
-        password_data: PasswordChange
+        self, db: Session, user_id: int, password_data: PasswordChange
     ) -> bool:
         """
         Change a user's password (requires current password).

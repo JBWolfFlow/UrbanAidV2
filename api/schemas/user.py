@@ -19,6 +19,7 @@ from models.user import UserRole
 # Password Validation
 # =============================================================================
 
+
 def validate_password_strength(password: str) -> str:
     """
     Validate password meets security requirements.
@@ -39,7 +40,9 @@ def validate_password_strength(password: str) -> str:
     if not re.search(r"\d", password):
         raise ValueError("Password must contain at least one digit")
     if not re.search(r'[!@#$%^&*(),.?":{}|<>]', password):
-        raise ValueError("Password must contain at least one special character (!@#$%^&*(),.?\":{}|<>)")
+        raise ValueError(
+            'Password must contain at least one special character (!@#$%^&*(),.?":{}|<>)'
+        )
     return password
 
 
@@ -47,14 +50,16 @@ def validate_password_strength(password: str) -> str:
 # Base Schemas
 # =============================================================================
 
+
 class UserBase(BaseModel):
     """Base user schema with common fields"""
+
     username: str = Field(
         ...,
         min_length=3,
         max_length=50,
         pattern=r"^[a-zA-Z0-9_-]+$",
-        description="Username (3-50 chars, alphanumeric with _ and -)"
+        description="Username (3-50 chars, alphanumeric with _ and -)",
     )
     email: EmailStr = Field(..., description="Valid email address")
 
@@ -63,13 +68,15 @@ class UserBase(BaseModel):
 # Request Schemas
 # =============================================================================
 
+
 class UserCreate(UserBase):
     """Schema for user registration"""
+
     password: str = Field(
         ...,
         min_length=8,
         max_length=128,
-        description="Password (8-128 chars, must meet complexity requirements)"
+        description="Password (8-128 chars, must meet complexity requirements)",
     )
 
     @field_validator("password")
@@ -84,18 +91,17 @@ class UserLogin(BaseModel):
 
     This replaces query parameter authentication for security.
     """
+
     username: str = Field(..., description="Username or email")
     password: str = Field(..., description="Account password")
 
 
 class PasswordChange(BaseModel):
     """Schema for changing password (authenticated user)"""
+
     current_password: str = Field(..., description="Current password for verification")
     new_password: str = Field(
-        ...,
-        min_length=8,
-        max_length=128,
-        description="New password"
+        ..., min_length=8, max_length=128, description="New password"
     )
     confirm_password: str = Field(..., description="Confirm new password")
 
@@ -114,12 +120,10 @@ class PasswordChange(BaseModel):
 
 class PasswordReset(BaseModel):
     """Schema for password reset (via email token)"""
+
     token: str = Field(..., description="Password reset token from email")
     new_password: str = Field(
-        ...,
-        min_length=8,
-        max_length=128,
-        description="New password"
+        ..., min_length=8, max_length=128, description="New password"
     )
     confirm_password: str = Field(..., description="Confirm new password")
 
@@ -138,28 +142,32 @@ class PasswordReset(BaseModel):
 
 class PasswordResetRequest(BaseModel):
     """Schema for requesting a password reset email"""
+
     email: EmailStr = Field(..., description="Email address to send reset link")
 
 
 class UserUpdate(BaseModel):
     """Schema for updating user profile"""
+
     email: Optional[EmailStr] = Field(None, description="New email address")
     username: Optional[str] = Field(
         None,
         min_length=3,
         max_length=50,
         pattern=r"^[a-zA-Z0-9_-]+$",
-        description="New username"
+        description="New username",
     )
 
 
 class UserRoleUpdate(BaseModel):
     """Schema for admin to update user role"""
+
     role: UserRole = Field(..., description="New role for user")
 
 
 class RefreshTokenRequest(BaseModel):
     """Schema for refreshing access token"""
+
     refresh_token: str = Field(..., description="Valid refresh token")
 
 
@@ -167,8 +175,10 @@ class RefreshTokenRequest(BaseModel):
 # Response Schemas
 # =============================================================================
 
+
 class UserResponse(UserBase):
     """Schema for user information response"""
+
     id: int
     role: str
     is_active: bool
@@ -183,6 +193,7 @@ class UserResponse(UserBase):
 
 class UserPublicResponse(BaseModel):
     """Public user information (for other users to see)"""
+
     id: int
     username: str
     created_at: datetime
@@ -193,14 +204,20 @@ class UserPublicResponse(BaseModel):
 
 class TokenResponse(BaseModel):
     """Schema for authentication token response"""
+
     access_token: str = Field(..., description="JWT access token")
-    refresh_token: str = Field(..., description="JWT refresh token for obtaining new access tokens")
-    token_type: str = Field(default="bearer", description="Token type (always 'bearer')")
+    refresh_token: str = Field(
+        ..., description="JWT refresh token for obtaining new access tokens"
+    )
+    token_type: str = Field(
+        default="bearer", description="Token type (always 'bearer')"
+    )
     expires_in: int = Field(..., description="Access token expiration time in seconds")
 
 
 class TokenData(BaseModel):
     """Schema for decoded token data (internal use)"""
+
     user_id: Optional[int] = None
     username: Optional[str] = None
     role: Optional[str] = None
@@ -209,6 +226,7 @@ class TokenData(BaseModel):
 
 class MessageResponse(BaseModel):
     """Generic message response"""
+
     message: str
     success: bool = True
 
@@ -217,8 +235,10 @@ class MessageResponse(BaseModel):
 # List Response Schemas
 # =============================================================================
 
+
 class UserListResponse(BaseModel):
     """Schema for paginated user list"""
+
     users: list[UserResponse]
     total: int
     page: int

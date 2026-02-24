@@ -62,6 +62,7 @@ Base = declarative_base()
 
 # Enable foreign key constraints for SQLite
 if "sqlite" in DATABASE_URL:
+
     @event.listens_for(engine, "connect")
     def set_sqlite_pragma(dbapi_connection, connection_record):
         cursor = dbapi_connection.cursor()
@@ -97,9 +98,10 @@ def init_db():
         alembic upgrade head
     """
     # Import all models here to ensure they are registered
-    from . import utility, user, rating
     Base.metadata.create_all(bind=engine)
-    logger.info(f"Database initialized: {DATABASE_URL.split('@')[-1] if '@' in DATABASE_URL else DATABASE_URL}")
+    logger.info(
+        f"Database initialized: {DATABASE_URL.split('@')[-1] if '@' in DATABASE_URL else DATABASE_URL}"
+    )
 
 
 def check_db_connection():
@@ -115,4 +117,4 @@ def check_db_connection():
         return True
     except Exception as e:
         logger.error(f"Database connection failed: {e}")
-        return False 
+        return False

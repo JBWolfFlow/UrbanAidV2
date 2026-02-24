@@ -10,12 +10,11 @@ This module provides comprehensive JWT-based authentication including:
 
 import os
 from datetime import datetime, timedelta, timezone
-from typing import Optional, Union
+from typing import Optional
 from jose import JWTError, jwt
 from passlib.context import CryptContext
 from fastapi import Depends, HTTPException, status
 from fastapi.security import OAuth2PasswordBearer
-from sqlalchemy.orm import Session
 from pydantic import BaseModel
 
 # Security configuration from environment
@@ -29,7 +28,7 @@ REFRESH_TOKEN_EXPIRE_DAYS = int(os.getenv("REFRESH_TOKEN_EXPIRE_DAYS", "7"))
 if os.getenv("ENVIRONMENT") == "production" and JWT_SECRET_KEY == _DEFAULT_SECRET:
     raise RuntimeError(
         "FATAL: JWT_SECRET_KEY is set to the default placeholder. "
-        "Generate a secure key: python -c \"import secrets; print(secrets.token_urlsafe(64))\""
+        'Generate a secure key: python -c "import secrets; print(secrets.token_urlsafe(64))"'
     )
 
 # Password hashing context with bcrypt
@@ -43,6 +42,7 @@ oauth2_scheme_optional = OAuth2PasswordBearer(tokenUrl="/auth/login", auto_error
 
 class TokenData(BaseModel):
     """Token payload data structure"""
+
     user_id: Optional[int] = None
     username: Optional[str] = None
     role: Optional[str] = None
@@ -52,6 +52,7 @@ class TokenData(BaseModel):
 # =============================================================================
 # Password Hashing Functions
 # =============================================================================
+
 
 def verify_password(plain_password: str, hashed_password: str) -> bool:
     """
@@ -88,10 +89,8 @@ def get_password_hash(password: str) -> str:
 # Token Creation Functions
 # =============================================================================
 
-def create_access_token(
-    data: dict,
-    expires_delta: Optional[timedelta] = None
-) -> str:
+
+def create_access_token(data: dict, expires_delta: Optional[timedelta] = None) -> str:
     """
     Create a JWT access token.
 
@@ -110,21 +109,18 @@ def create_access_token(
     if expires_delta:
         expire = datetime.now(timezone.utc) + expires_delta
     else:
-        expire = datetime.now(timezone.utc) + timedelta(minutes=ACCESS_TOKEN_EXPIRE_MINUTES)
+        expire = datetime.now(timezone.utc) + timedelta(
+            minutes=ACCESS_TOKEN_EXPIRE_MINUTES
+        )
 
-    to_encode.update({
-        "exp": expire,
-        "iat": datetime.now(timezone.utc),
-        "type": "access"
-    })
+    to_encode.update(
+        {"exp": expire, "iat": datetime.now(timezone.utc), "type": "access"}
+    )
 
     return jwt.encode(to_encode, JWT_SECRET_KEY, algorithm=JWT_ALGORITHM)
 
 
-def create_refresh_token(
-    data: dict,
-    expires_delta: Optional[timedelta] = None
-) -> str:
+def create_refresh_token(data: dict, expires_delta: Optional[timedelta] = None) -> str:
     """
     Create a JWT refresh token.
 
@@ -145,11 +141,9 @@ def create_refresh_token(
     else:
         expire = datetime.now(timezone.utc) + timedelta(days=REFRESH_TOKEN_EXPIRE_DAYS)
 
-    to_encode.update({
-        "exp": expire,
-        "iat": datetime.now(timezone.utc),
-        "type": "refresh"
-    })
+    to_encode.update(
+        {"exp": expire, "iat": datetime.now(timezone.utc), "type": "refresh"}
+    )
 
     return jwt.encode(to_encode, JWT_SECRET_KEY, algorithm=JWT_ALGORITHM)
 
@@ -178,7 +172,7 @@ def decode_token(token: str) -> Optional[TokenData]:
             user_id=user_id,
             username=username,
             role=role,
-            exp=datetime.fromtimestamp(exp, tz=timezone.utc) if exp else None
+            exp=datetime.fromtimestamp(exp, tz=timezone.utc) if exp else None,
         )
     except JWTError:
         return None
@@ -188,9 +182,8 @@ def decode_token(token: str) -> Optional[TokenData]:
 # FastAPI Dependencies
 # =============================================================================
 
-async def get_current_user(
-    token: str = Depends(oauth2_scheme)
-) -> TokenData:
+
+async def get_current_user(token: str = Depends(oauth2_scheme)) -> TokenData:
     """
     FastAPI dependency to get the current authenticated user.
 
@@ -220,7 +213,7 @@ async def get_current_user(
 
 
 async def get_current_user_optional(
-    token: Optional[str] = Depends(oauth2_scheme_optional)
+    token: Optional[str] = Depends(oauth2_scheme_optional),
 ) -> Optional[TokenData]:
     """
     FastAPI dependency to optionally get the current user.
@@ -241,7 +234,7 @@ async def get_current_user_optional(
 
 
 async def get_current_active_user(
-    current_user: TokenData = Depends(get_current_user)
+    current_user: TokenData = Depends(get_current_user),
 ) -> TokenData:
     """
     FastAPI dependency to get an active authenticated user.
@@ -283,11 +276,14 @@ def require_role(allowed_roles: list[str]):
     Returns:
         Dependency function that checks user role
     """
-    async def role_checker(current_user: TokenData = Depends(get_current_user)) -> TokenData:
+
+    async def role_checker(
+        current_user: TokenData = Depends(get_current_user),
+    ) -> TokenData:
         if current_user.role not in allowed_roles:
             raise HTTPException(
                 status_code=status.HTTP_403_FORBIDDEN,
-                detail=f"Access denied. Required roles: {allowed_roles}"
+                detail=f"Access denied. Required roles: {allowed_roles}",
             )
         return current_user
 

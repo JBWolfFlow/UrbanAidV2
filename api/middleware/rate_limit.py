@@ -14,7 +14,7 @@ import os
 import time
 import logging
 from collections import defaultdict
-from typing import Optional, Dict, Tuple
+from typing import Dict, Tuple
 from starlette.middleware.base import BaseHTTPMiddleware
 from starlette.requests import Request
 from starlette.responses import Response, JSONResponse
@@ -44,8 +44,7 @@ class InMemoryRateLimiter:
         cutoff = now - window_seconds
         for key in list(self._requests.keys()):
             self._requests[key] = [
-                (ts, count) for ts, count in self._requests[key]
-                if ts > cutoff
+                (ts, count) for ts, count in self._requests[key] if ts > cutoff
             ]
             if not self._requests[key]:
                 del self._requests[key]
@@ -53,10 +52,7 @@ class InMemoryRateLimiter:
         self._last_cleanup = now
 
     def is_rate_limited(
-        self,
-        key: str,
-        max_requests: int,
-        window_seconds: int
+        self, key: str, max_requests: int, window_seconds: int
     ) -> Tuple[bool, int, int]:
         """
         Check if a request should be rate limited.
@@ -94,14 +90,12 @@ class RedisRateLimiter:
 
     def __init__(self, redis_url: str = None):
         import redis
+
         self.redis_url = redis_url or os.getenv("REDIS_URL", "redis://localhost:6379")
         self.redis = redis.from_url(self.redis_url, decode_responses=True)
 
     def is_rate_limited(
-        self,
-        key: str,
-        max_requests: int,
-        window_seconds: int
+        self, key: str, max_requests: int, window_seconds: int
     ) -> Tuple[bool, int, int]:
         """
         Check rate limit using Redis sorted set for sliding window.
@@ -137,7 +131,9 @@ def _create_limiter():
             logger.info("Rate limiter: Redis backend (%s)", redis_url.split("@")[-1])
             return limiter
         except Exception as e:
-            logger.warning("Redis unavailable for rate limiting, falling back to in-memory: %s", e)
+            logger.warning(
+                "Redis unavailable for rate limiting, falling back to in-memory: %s", e
+            )
     logger.info("Rate limiter: in-memory backend")
     return InMemoryRateLimiter()
 
@@ -161,7 +157,7 @@ class RateLimitMiddleware(BaseHTTPMiddleware):
         login_limit: int = 5,
         anonymous_limit: int = 20,
         write_limit: int = 10,
-        enabled: bool = True
+        enabled: bool = True,
     ):
         super().__init__(app)
 
@@ -186,9 +182,7 @@ class RateLimitMiddleware(BaseHTTPMiddleware):
         return client_ip
 
     def _get_rate_limit_params(
-        self,
-        request: Request,
-        client_id: str
+        self, request: Request, client_id: str
     ) -> Tuple[str, int, int]:
         """Determine rate limit parameters based on request context."""
         path = request.url.path.lower()
@@ -226,14 +220,14 @@ class RateLimitMiddleware(BaseHTTPMiddleware):
                 status_code=429,
                 content={
                     "detail": "Too many requests. Please try again later.",
-                    "retry_after": reset_time
+                    "retry_after": reset_time,
                 },
                 headers={
                     "Retry-After": str(reset_time),
                     "X-RateLimit-Limit": str(max_requests),
                     "X-RateLimit-Remaining": "0",
-                    "X-RateLimit-Reset": str(int(time.time()) + reset_time)
-                }
+                    "X-RateLimit-Reset": str(int(time.time()) + reset_time),
+                },
             )
 
         response = await call_next(request)

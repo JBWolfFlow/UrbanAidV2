@@ -8,9 +8,18 @@ This model supports:
 - Reporting functionality
 """
 
-from sqlalchemy import Column, Integer, String, Float, DateTime, Text, ForeignKey, Boolean, Index
+from sqlalchemy import (
+    Column,
+    Integer,
+    String,
+    Float,
+    DateTime,
+    Text,
+    ForeignKey,
+    Boolean,
+    Index,
+)
 from sqlalchemy.sql import func
-from sqlalchemy.orm import relationship
 from .database import Base
 
 
@@ -21,6 +30,7 @@ class Rating(Base):
     Each user can only rate a utility once (enforced by unique constraint).
     Ratings can be updated but history is tracked via updated_at.
     """
+
     __tablename__ = "ratings"
 
     # Primary identification
@@ -31,13 +41,10 @@ class Rating(Base):
         String(36),
         ForeignKey("utilities.id", ondelete="CASCADE"),
         nullable=False,
-        index=True
+        index=True,
     )
     user_id = Column(
-        Integer,
-        ForeignKey("users.id", ondelete="SET NULL"),
-        nullable=True,
-        index=True
+        Integer, ForeignKey("users.id", ondelete="SET NULL"), nullable=True, index=True
     )
 
     # Rating content
@@ -49,12 +56,16 @@ class Rating(Base):
     is_flagged = Column(Boolean, default=False, nullable=False)
 
     # Timestamps
-    created_at = Column(DateTime(timezone=True), server_default=func.now(), nullable=False)
-    updated_at = Column(DateTime(timezone=True), server_default=func.now(), onupdate=func.now())
+    created_at = Column(
+        DateTime(timezone=True), server_default=func.now(), nullable=False
+    )
+    updated_at = Column(
+        DateTime(timezone=True), server_default=func.now(), onupdate=func.now()
+    )
 
     # Unique constraint: one rating per user per utility
     __table_args__ = (
-        Index('idx_rating_utility_user', 'utility_id', 'user_id', unique=True),
+        Index("idx_rating_utility_user", "utility_id", "user_id", unique=True),
     )
 
     def __repr__(self) -> str:

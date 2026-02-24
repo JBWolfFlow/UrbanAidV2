@@ -10,11 +10,17 @@ This model represents community resources like:
 """
 
 from sqlalchemy import (
-    Column, Integer, String, Float, Boolean, DateTime,
-    Text, ForeignKey, Index
+    Column,
+    Integer,
+    String,
+    Float,
+    Boolean,
+    DateTime,
+    Text,
+    ForeignKey,
+    Index,
 )
 from sqlalchemy.sql import func
-from sqlalchemy.orm import relationship
 from .database import Base
 
 
@@ -29,6 +35,7 @@ class Utility(Base):
     - Verification status
     - User contribution tracking
     """
+
     __tablename__ = "utilities"
 
     # Primary identification
@@ -74,18 +81,24 @@ class Utility(Base):
     rating_count = Column(Integer, default=0, nullable=False)
 
     # Timestamps
-    created_at = Column(DateTime(timezone=True), server_default=func.now(), nullable=False)
-    updated_at = Column(DateTime(timezone=True), server_default=func.now(), onupdate=func.now())
+    created_at = Column(
+        DateTime(timezone=True), server_default=func.now(), nullable=False
+    )
+    updated_at = Column(
+        DateTime(timezone=True), server_default=func.now(), onupdate=func.now()
+    )
     verified_at = Column(DateTime(timezone=True), nullable=True)
 
     # Indexes for geo queries
     __table_args__ = (
-        Index('idx_utility_location', 'latitude', 'longitude'),
-        Index('idx_utility_category_active', 'category', 'is_active'),
+        Index("idx_utility_location", "latitude", "longitude"),
+        Index("idx_utility_category_active", "category", "is_active"),
     )
 
     def __repr__(self) -> str:
-        return f"<Utility(id='{self.id}', name='{self.name}', category='{self.category}')>"
+        return (
+            f"<Utility(id='{self.id}', name='{self.name}', category='{self.category}')>"
+        )
 
 
 class UtilityReport(Base):
@@ -98,22 +111,31 @@ class UtilityReport(Base):
     - Safety concerns
     - Inappropriate content
     """
+
     __tablename__ = "utility_reports"
 
     id = Column(Integer, primary_key=True, index=True)
-    utility_id = Column(String(36), ForeignKey("utilities.id"), nullable=False, index=True)
+    utility_id = Column(
+        String(36), ForeignKey("utilities.id"), nullable=False, index=True
+    )
     reporter_id = Column(Integer, ForeignKey("users.id"), nullable=True)
 
-    reason = Column(String(50), nullable=False)  # 'incorrect', 'closed', 'safety', 'spam', 'other'
+    reason = Column(
+        String(50), nullable=False
+    )  # 'incorrect', 'closed', 'safety', 'spam', 'other'
     description = Column(Text, nullable=True)
 
     # Status tracking
-    status = Column(String(20), default="pending", nullable=False)  # 'pending', 'reviewed', 'resolved', 'dismissed'
+    status = Column(
+        String(20), default="pending", nullable=False
+    )  # 'pending', 'reviewed', 'resolved', 'dismissed'
     reviewed_by_id = Column(Integer, ForeignKey("users.id"), nullable=True)
     resolution_notes = Column(Text, nullable=True)
 
     # Timestamps
-    created_at = Column(DateTime(timezone=True), server_default=func.now(), nullable=False)
+    created_at = Column(
+        DateTime(timezone=True), server_default=func.now(), nullable=False
+    )
     reviewed_at = Column(DateTime(timezone=True), nullable=True)
 
     def __repr__(self) -> str:

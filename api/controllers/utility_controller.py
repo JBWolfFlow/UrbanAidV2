@@ -14,14 +14,15 @@ import uuid
 from datetime import datetime, timezone
 from typing import List, Optional, Dict, Any
 from sqlalchemy.orm import Session
-from sqlalchemy import func, or_, and_, text
+from sqlalchemy import func, or_
 
 from models.utility import Utility, UtilityReport
-from models.user import User
 from schemas.utility import UtilityCreate, UtilityUpdate, UtilityFilter
 from utils.exceptions import (
-    UtilityNotFoundError, UnauthorizedError,
-    InvalidLocationError, InvalidRadiusError
+    UtilityNotFoundError,
+    UnauthorizedError,
+    InvalidLocationError,
+    InvalidRadiusError,
 )
 
 
@@ -32,24 +33,53 @@ EARTH_RADIUS_KM = 6371.0
 # and government-sourced (HRSA, VA, USDA) utilities for Washington state
 VALID_CATEGORIES = {
     # Infrastructure
-    "water_fountain", "restroom", "bench", "wifi", "charging", "transit", "library",
+    "water_fountain",
+    "restroom",
+    "bench",
+    "wifi",
+    "charging",
+    "transit",
+    "library",
     # Essential Services
-    "shelter", "free_food", "clinic", "medical", "food",
+    "shelter",
+    "free_food",
+    "clinic",
+    "medical",
+    "food",
     # Government Health (HRSA)
-    "health_center", "community_health_center",
+    "health_center",
+    "community_health_center",
     # Veterans (VA)
-    "va_facility", "va_medical_center", "va_outpatient_clinic", "va_vet_center",
+    "va_facility",
+    "va_medical_center",
+    "va_outpatient_clinic",
+    "va_vet_center",
     # USDA
-    "usda_snap_office", "usda_wic_office", "usda_farm_service_center",
+    "usda_snap_office",
+    "usda_wic_office",
+    "usda_farm_service_center",
     # Personal Care
-    "shower", "laundry", "haircut",
+    "shower",
+    "laundry",
+    "haircut",
     # Support Services
-    "legal", "social_services", "job_training", "mental_health",
-    "addiction_services", "suicide_prevention", "domestic_violence",
+    "legal",
+    "social_services",
+    "job_training",
+    "mental_health",
+    "addiction_services",
+    "suicide_prevention",
+    "domestic_violence",
     # Emergency
-    "warming_center", "cooling_center", "disaster_relief",
+    "warming_center",
+    "cooling_center",
+    "disaster_relief",
     # Specialized
-    "needle_exchange", "pet_services", "dental", "eye_care", "tax_help",
+    "needle_exchange",
+    "pet_services",
+    "dental",
+    "eye_care",
+    "tax_help",
     # Catch-all
     "other",
 }
@@ -83,8 +113,10 @@ class UtilityController:
         delta_lon = math.radians(lon2 - lon1)
 
         # Haversine formula
-        a = (math.sin(delta_lat / 2) ** 2 +
-             math.cos(lat1_rad) * math.cos(lat2_rad) * math.sin(delta_lon / 2) ** 2)
+        a = (
+            math.sin(delta_lat / 2) ** 2
+            + math.cos(lat1_rad) * math.cos(lat2_rad) * math.sin(delta_lon / 2) ** 2
+        )
         c = 2 * math.atan2(math.sqrt(a), math.sqrt(1 - a))
 
         return EARTH_RADIUS_KM * c
@@ -101,7 +133,9 @@ class UtilityController:
     def validate_radius(radius: float) -> None:
         """Validate search radius is within allowed range."""
         if not (0.1 <= radius <= 50):
-            raise InvalidRadiusError("Search radius must be between 0.1 and 50 kilometers")
+            raise InvalidRadiusError(
+                "Search radius must be between 0.1 and 50 kilometers"
+            )
 
     # =========================================================================
     # Geo-based Search
@@ -115,7 +149,7 @@ class UtilityController:
         radius_km: float = 5.0,
         filters: Optional[UtilityFilter] = None,
         limit: int = 50,
-        offset: int = 0
+        offset: int = 0,
     ) -> List[Dict[str, Any]]:
         """
         Find utilities within a specified radius of a location.
@@ -154,7 +188,7 @@ class UtilityController:
             Utility.latitude >= min_lat,
             Utility.latitude <= max_lat,
             Utility.longitude >= min_lon,
-            Utility.longitude <= max_lon
+            Utility.longitude <= max_lon,
         )
 
         # Apply additional filters
@@ -162,7 +196,9 @@ class UtilityController:
             if filters.category:
                 query = query.filter(Utility.category == filters.category)
             if filters.wheelchair_accessible is not None:
-                query = query.filter(Utility.wheelchair_accessible == filters.wheelchair_accessible)
+                query = query.filter(
+                    Utility.wheelchair_accessible == filters.wheelchair_accessible
+                )
             if filters.verified is not None:
                 query = query.filter(Utility.verified == filters.verified)
 
@@ -172,32 +208,33 @@ class UtilityController:
         results = []
         for utility in utilities:
             distance = self.haversine_distance(
-                latitude, longitude,
-                utility.latitude, utility.longitude
+                latitude, longitude, utility.latitude, utility.longitude
             )
 
             # Only include if within actual radius (bounding box is approximate)
             if distance <= radius_km:
-                results.append({
-                    "id": utility.id,
-                    "name": utility.name,
-                    "category": utility.category,
-                    "subcategory": utility.subcategory,
-                    "latitude": utility.latitude,
-                    "longitude": utility.longitude,
-                    "description": utility.description,
-                    "address": utility.address,
-                    "external_id": utility.external_id,
-                    "verified": utility.verified,
-                    "wheelchair_accessible": utility.wheelchair_accessible,
-                    "average_rating": utility.average_rating,
-                    "rating_count": utility.rating_count,
-                    "distance_km": round(distance, 2)
-                })
+                results.append(
+                    {
+                        "id": utility.id,
+                        "name": utility.name,
+                        "category": utility.category,
+                        "subcategory": utility.subcategory,
+                        "latitude": utility.latitude,
+                        "longitude": utility.longitude,
+                        "description": utility.description,
+                        "address": utility.address,
+                        "external_id": utility.external_id,
+                        "verified": utility.verified,
+                        "wheelchair_accessible": utility.wheelchair_accessible,
+                        "average_rating": utility.average_rating,
+                        "rating_count": utility.rating_count,
+                        "distance_km": round(distance, 2),
+                    }
+                )
 
         # Sort by distance and apply pagination
         results.sort(key=lambda x: x["distance_km"])
-        return results[offset:offset + limit]
+        return results[offset : offset + limit]
 
     async def search_utilities(
         self,
@@ -206,7 +243,7 @@ class UtilityController:
         latitude: Optional[float] = None,
         longitude: Optional[float] = None,
         radius_km: float = 10.0,
-        limit: int = 20
+        limit: int = 20,
     ) -> List[Dict[str, Any]]:
         """
         Search utilities by text query with optional location filtering.
@@ -232,8 +269,8 @@ class UtilityController:
                 Utility.name.ilike(search_pattern),
                 Utility.description.ilike(search_pattern),
                 Utility.category.ilike(search_pattern),
-                Utility.address.ilike(search_pattern)
-            )
+                Utility.address.ilike(search_pattern),
+            ),
         )
 
         utilities = db_query.limit(limit * 2).all()  # Get extra for distance filtering
@@ -252,14 +289,13 @@ class UtilityController:
                 "external_id": utility.external_id,
                 "verified": utility.verified,
                 "wheelchair_accessible": utility.wheelchair_accessible,
-                "average_rating": utility.average_rating
+                "average_rating": utility.average_rating,
             }
 
             # Add distance if location provided
             if latitude is not None and longitude is not None:
                 distance = self.haversine_distance(
-                    latitude, longitude,
-                    utility.latitude, utility.longitude
+                    latitude, longitude, utility.latitude, utility.longitude
                 )
                 if distance <= radius_km:
                     result["distance_km"] = round(distance, 2)
@@ -282,10 +318,7 @@ class UtilityController:
         return db.query(Utility).filter(Utility.id == utility_id).first()
 
     async def create_utility(
-        self,
-        db: Session,
-        utility_data: UtilityCreate,
-        user_id: Optional[int] = None
+        self, db: Session, utility_data: UtilityCreate, user_id: Optional[int] = None
     ) -> Utility:
         """
         Create a new utility.
@@ -311,7 +344,7 @@ class UtilityController:
             wheelchair_accessible=utility_data.wheelchair_accessible or False,
             creator_id=user_id,
             verified=False,
-            is_active=True
+            is_active=True,
         )
 
         db.add(utility)
@@ -326,7 +359,7 @@ class UtilityController:
         utility_id: str,
         utility_data: UtilityUpdate,
         user_id: int,
-        is_admin: bool = False
+        is_admin: bool = False,
     ) -> Optional[Utility]:
         """
         Update a utility.
@@ -369,11 +402,7 @@ class UtilityController:
         return utility
 
     async def delete_utility(
-        self,
-        db: Session,
-        utility_id: str,
-        user_id: int,
-        is_admin: bool = False
+        self, db: Session, utility_id: str, user_id: int, is_admin: bool = False
     ) -> bool:
         """
         Soft-delete a utility (mark as inactive).
@@ -417,7 +446,7 @@ class UtilityController:
         utility_id: str,
         reason: str,
         description: Optional[str] = None,
-        user_id: Optional[int] = None
+        user_id: Optional[int] = None,
     ) -> UtilityReport:
         """
         Report a utility for review.
@@ -444,7 +473,7 @@ class UtilityController:
             reporter_id=user_id,
             reason=reason,
             description=description,
-            status="pending"
+            status="pending",
         )
 
         # Increment report count on utility
@@ -457,10 +486,7 @@ class UtilityController:
         return report
 
     async def verify_utility(
-        self,
-        db: Session,
-        utility_id: str,
-        admin_user_id: int
+        self, db: Session, utility_id: str, admin_user_id: int
     ) -> Utility:
         """
         Mark a utility as verified (admin/moderator only).
@@ -501,30 +527,33 @@ class UtilityController:
             Dictionary with counts by category, verification status, etc.
         """
         total_utilities = db.query(Utility).filter(Utility.is_active == True).count()
-        verified_utilities = db.query(Utility).filter(
-            Utility.is_active == True,
-            Utility.verified == True
-        ).count()
+        verified_utilities = (
+            db.query(Utility)
+            .filter(Utility.is_active == True, Utility.verified == True)
+            .count()
+        )
 
         # Count by category
-        category_counts = db.query(
-            Utility.category,
-            func.count(Utility.id).label("count")
-        ).filter(
-            Utility.is_active == True
-        ).group_by(Utility.category).all()
+        category_counts = (
+            db.query(Utility.category, func.count(Utility.id).label("count"))
+            .filter(Utility.is_active == True)
+            .group_by(Utility.category)
+            .all()
+        )
 
         # Pending reports
-        pending_reports = db.query(UtilityReport).filter(
-            UtilityReport.status == "pending"
-        ).count()
+        pending_reports = (
+            db.query(UtilityReport).filter(UtilityReport.status == "pending").count()
+        )
 
         return {
             "total_utilities": total_utilities,
             "verified_utilities": verified_utilities,
-            "verification_rate": round(verified_utilities / max(total_utilities, 1) * 100, 1),
+            "verification_rate": round(
+                verified_utilities / max(total_utilities, 1) * 100, 1
+            ),
             "categories": {cat: count for cat, count in category_counts},
-            "pending_reports": pending_reports
+            "pending_reports": pending_reports,
         }
 
     async def increment_view_count(self, db: Session, utility_id: str) -> None:
@@ -535,11 +564,7 @@ class UtilityController:
             db.commit()
 
     async def update_rating_stats(
-        self,
-        db: Session,
-        utility_id: str,
-        new_average: float,
-        new_count: int
+        self, db: Session, utility_id: str, new_average: float, new_count: int
     ) -> None:
         """Update denormalized rating statistics."""
         utility = self.get_utility_by_id(db, utility_id)

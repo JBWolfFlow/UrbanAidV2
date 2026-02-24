@@ -32,14 +32,11 @@ import csv
 import io
 import time
 import argparse
-from datetime import datetime, timezone
-from typing import List, Dict, Optional, Tuple
 
 # Add parent dir so we can import project modules
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), ".."))
 
 import httpx
-from sqlalchemy.orm import Session
 from models.database import SessionLocal, init_db
 from models.utility import Utility
 
@@ -76,6 +73,7 @@ def is_in_washington(lat, lon):
 # ArcGIS Pagination Helper
 # ---------------------------------------------------------------------------
 
+
 def _fetch_arcgis_all(base_url, where="1=1", out_fields="*", batch_size=1000):
     # type: (str, str, str, int) -> List[Dict]
     """
@@ -103,7 +101,9 @@ def _fetch_arcgis_all(base_url, where="1=1", out_fields="*", batch_size=1000):
             try:
                 resp = client.get(base_url + "/query", params=params)
                 if resp.status_code != 200:
-                    print(f"  ArcGIS returned status {resp.status_code} at offset {offset}")
+                    print(
+                        f"  ArcGIS returned status {resp.status_code} at offset {offset}"
+                    )
                     break
 
                 data = resp.json()
@@ -134,6 +134,7 @@ def _fetch_arcgis_all(base_url, where="1=1", out_fields="*", batch_size=1000):
 # ---------------------------------------------------------------------------
 # HRSA Health Centers
 # ---------------------------------------------------------------------------
+
 
 def fetch_hrsa_wa():
     # type: () -> List[Dict]
@@ -170,8 +171,12 @@ def fetch_hrsa_wa():
                         continue
 
                     # X = longitude, Y = latitude in HRSA's coordinate system
-                    lon = _safe_float(row.get("Geocoding Artifact Address Primary X Coordinate"))
-                    lat = _safe_float(row.get("Geocoding Artifact Address Primary Y Coordinate"))
+                    lon = _safe_float(
+                        row.get("Geocoding Artifact Address Primary X Coordinate")
+                    )
+                    lat = _safe_float(
+                        row.get("Geocoding Artifact Address Primary Y Coordinate")
+                    )
                     if not lat or not lon or not is_in_washington(lat, lon):
                         continue
 
@@ -188,7 +193,9 @@ def fetch_hrsa_wa():
                     address = ", ".join(filter(None, address_parts))
 
                     hc_type = (row.get("Health Center Type Description") or "").strip()
-                    location_type = (row.get("Health Center Location Type Description") or "").strip()
+                    location_type = (
+                        row.get("Health Center Location Type Description") or ""
+                    ).strip()
                     desc_parts = []
                     if hc_type:
                         desc_parts.append(hc_type)
@@ -196,23 +203,27 @@ def fetch_hrsa_wa():
                         desc_parts.append("(%s)" % location_type)
                     if hc_name and hc_name != site_name:
                         desc_parts.append("Part of %s" % hc_name)
-                    description = " ".join(desc_parts) if desc_parts else "HRSA Health Center"
+                    description = (
+                        " ".join(desc_parts) if desc_parts else "HRSA Health Center"
+                    )
 
                     phone = (row.get("Site Telephone Number") or "").strip()
                     website = (row.get("Site Web Address") or "").strip()
 
-                    centers.append({
-                        "name": name,
-                        "category": "health_center",
-                        "subcategory": "community_health_center",
-                        "latitude": lat,
-                        "longitude": lon,
-                        "description": description,
-                        "address": address,
-                        "phone": phone,
-                        "website": website,
-                        "source": "HRSA",
-                    })
+                    centers.append(
+                        {
+                            "name": name,
+                            "category": "health_center",
+                            "subcategory": "community_health_center",
+                            "latitude": lat,
+                            "longitude": lon,
+                            "description": description,
+                            "address": address,
+                            "phone": phone,
+                            "website": website,
+                            "source": "HRSA",
+                        }
+                    )
             else:
                 print(f"  HRSA CSV download returned status {response.status_code}")
 
@@ -226,6 +237,7 @@ def fetch_hrsa_wa():
 # ---------------------------------------------------------------------------
 # VA Facilities
 # ---------------------------------------------------------------------------
+
 
 def fetch_va_wa():
     # type: () -> List[Dict]
@@ -303,18 +315,20 @@ def fetch_va_wa():
             county = (attrs.get("CNAME") or "").strip()
             desc = "%s in %s County, WA" % (label, county) if county else label
 
-            facilities.append({
-                "name": name,
-                "category": "va_facility",
-                "subcategory": subcategory,
-                "latitude": lat,
-                "longitude": lon,
-                "description": desc,
-                "address": address,
-                "phone": "",
-                "website": "https://www.va.gov/find-locations",
-                "source": "VA (HIFLD)",
-            })
+            facilities.append(
+                {
+                    "name": name,
+                    "category": "va_facility",
+                    "subcategory": subcategory,
+                    "latitude": lat,
+                    "longitude": lon,
+                    "description": desc,
+                    "address": address,
+                    "phone": "",
+                    "website": "https://www.va.gov/find-locations",
+                    "source": "VA (HIFLD)",
+                }
+            )
 
     except Exception as e:
         print(f"  VA HIFLD fetch error: {e}")
@@ -331,35 +345,114 @@ def _get_curated_va():
     # type: () -> List[Dict]
     """Curated fallback VA facilities in Washington state."""
     base = {
-        "category": "va_facility", "phone": "",
-        "website": "https://www.va.gov/find-locations", "source": "VA (HIFLD)",
+        "category": "va_facility",
+        "phone": "",
+        "website": "https://www.va.gov/find-locations",
+        "source": "VA (HIFLD)",
     }
     entries = [
-        ("Seattle VA Medical Center", "va_medical_center", 47.5552, -122.2999, "1660 S Columbian Way, Seattle, WA 98108", "VA Medical Center in King County, WA"),
-        ("American Lake VA Medical Center", "va_medical_center", 47.1010, -122.5764, "9600 Veterans Dr SW, Tacoma, WA 98493", "VA Medical Center in Pierce County, WA"),
-        ("Mann-Grandstaff VA Medical Center", "va_medical_center", 47.6698, -117.3927, "4815 N Assembly St, Spokane, WA 99205", "VA Medical Center in Spokane County, WA"),
-        ("Jonathan M. Wainwright Memorial VAMC", "va_medical_center", 46.0731, -118.3354, "77 Wainwright Dr, Walla Walla, WA 99362", "VA Medical Center in Walla Walla County, WA"),
-        ("Seattle Vet Center", "va_vet_center", 47.5989, -122.3283, "4735 E Marginal Way S, Seattle, WA 98134", "Vet Center in King County, WA"),
-        ("Tacoma Vet Center", "va_vet_center", 47.2335, -122.5036, "4916 Center St Suite E, Tacoma, WA 98409", "Vet Center in Pierce County, WA"),
-        ("Spokane Vet Center", "va_vet_center", 47.6481, -117.4253, "13109 E Mirabeau Pkwy, Spokane Valley, WA 99216", "Vet Center in Spokane County, WA"),
-        ("Bellingham Vet Center", "va_vet_center", 48.7336, -122.4662, "3800 Byron Ave Suite 124, Bellingham, WA 98229", "Vet Center in Whatcom County, WA"),
-        ("Federal Way Vet Center", "va_vet_center", 47.3144, -122.2909, "32020 32nd Ave S Suite 110, Federal Way, WA 98001", "Vet Center in King County, WA"),
-        ("Yakima Valley Vet Center", "va_vet_center", 46.5819, -120.5024, "1111 N 1st St Suite 1, Yakima, WA 98901", "Vet Center in Yakima County, WA"),
+        (
+            "Seattle VA Medical Center",
+            "va_medical_center",
+            47.5552,
+            -122.2999,
+            "1660 S Columbian Way, Seattle, WA 98108",
+            "VA Medical Center in King County, WA",
+        ),
+        (
+            "American Lake VA Medical Center",
+            "va_medical_center",
+            47.1010,
+            -122.5764,
+            "9600 Veterans Dr SW, Tacoma, WA 98493",
+            "VA Medical Center in Pierce County, WA",
+        ),
+        (
+            "Mann-Grandstaff VA Medical Center",
+            "va_medical_center",
+            47.6698,
+            -117.3927,
+            "4815 N Assembly St, Spokane, WA 99205",
+            "VA Medical Center in Spokane County, WA",
+        ),
+        (
+            "Jonathan M. Wainwright Memorial VAMC",
+            "va_medical_center",
+            46.0731,
+            -118.3354,
+            "77 Wainwright Dr, Walla Walla, WA 99362",
+            "VA Medical Center in Walla Walla County, WA",
+        ),
+        (
+            "Seattle Vet Center",
+            "va_vet_center",
+            47.5989,
+            -122.3283,
+            "4735 E Marginal Way S, Seattle, WA 98134",
+            "Vet Center in King County, WA",
+        ),
+        (
+            "Tacoma Vet Center",
+            "va_vet_center",
+            47.2335,
+            -122.5036,
+            "4916 Center St Suite E, Tacoma, WA 98409",
+            "Vet Center in Pierce County, WA",
+        ),
+        (
+            "Spokane Vet Center",
+            "va_vet_center",
+            47.6481,
+            -117.4253,
+            "13109 E Mirabeau Pkwy, Spokane Valley, WA 99216",
+            "Vet Center in Spokane County, WA",
+        ),
+        (
+            "Bellingham Vet Center",
+            "va_vet_center",
+            48.7336,
+            -122.4662,
+            "3800 Byron Ave Suite 124, Bellingham, WA 98229",
+            "Vet Center in Whatcom County, WA",
+        ),
+        (
+            "Federal Way Vet Center",
+            "va_vet_center",
+            47.3144,
+            -122.2909,
+            "32020 32nd Ave S Suite 110, Federal Way, WA 98001",
+            "Vet Center in King County, WA",
+        ),
+        (
+            "Yakima Valley Vet Center",
+            "va_vet_center",
+            46.5819,
+            -120.5024,
+            "1111 N 1st St Suite 1, Yakima, WA 98901",
+            "Vet Center in Yakima County, WA",
+        ),
     ]
     result = []
     for name, subcat, lat, lon, addr, desc in entries:
         item = dict(base)
-        item.update({
-            "name": name, "subcategory": subcat,
-            "latitude": lat, "longitude": lon,
-            "address": addr, "description": desc,
-        })
+        item.update(
+            {
+                "name": name,
+                "subcategory": subcat,
+                "latitude": lat,
+                "longitude": lon,
+                "address": addr,
+                "description": desc,
+            }
+        )
         result.append(item)
     return result
+
 
 # ---------------------------------------------------------------------------
 # USDA Service Centers
 # ---------------------------------------------------------------------------
+
 
 def fetch_usda_wa():
     # type: () -> List[Dict]
@@ -385,36 +478,55 @@ def fetch_usda_wa():
             if response.status_code == 200:
                 try:
                     data = response.json()
-                    raw = data if isinstance(data, list) else data.get("results", data.get("offices", []))
+                    raw = (
+                        data
+                        if isinstance(data, list)
+                        else data.get("results", data.get("offices", []))
+                    )
 
                     for office in raw:
                         lat = _safe_float(office.get("latitude") or office.get("lat"))
-                        lon = _safe_float(office.get("longitude") or office.get("lng") or office.get("lon"))
+                        lon = _safe_float(
+                            office.get("longitude")
+                            or office.get("lng")
+                            or office.get("lon")
+                        )
 
                         if lat and lon and is_in_washington(lat, lon):
                             agency = (office.get("agency") or "").upper()
                             subcategory = _usda_subcategory(agency)
-                            address = ", ".join(filter(None, [
-                                office.get("address", ""),
-                                office.get("city", ""),
-                                office.get("state", "WA"),
-                                office.get("zip", ""),
-                            ]))
+                            address = ", ".join(
+                                filter(
+                                    None,
+                                    [
+                                        office.get("address", ""),
+                                        office.get("city", ""),
+                                        office.get("state", "WA"),
+                                        office.get("zip", ""),
+                                    ],
+                                )
+                            )
 
-                            facilities.append({
-                                "name": office.get("name") or "USDA %s Office" % agency,
-                                "category": subcategory,
-                                "subcategory": subcategory,
-                                "latitude": lat,
-                                "longitude": lon,
-                                "description": "USDA %s service center in Washington state" % agency,
-                                "address": address,
-                                "phone": office.get("phone", ""),
-                                "website": office.get("website", ""),
-                                "source": "USDA",
-                            })
+                            facilities.append(
+                                {
+                                    "name": office.get("name")
+                                    or "USDA %s Office" % agency,
+                                    "category": subcategory,
+                                    "subcategory": subcategory,
+                                    "latitude": lat,
+                                    "longitude": lon,
+                                    "description": "USDA %s service center in Washington state"
+                                    % agency,
+                                    "address": address,
+                                    "phone": office.get("phone", ""),
+                                    "website": office.get("website", ""),
+                                    "source": "USDA",
+                                }
+                            )
                 except (json.JSONDecodeError, ValueError):
-                    print("  USDA response was not JSON \u2014 may need different approach")
+                    print(
+                        "  USDA response was not JSON \u2014 may need different approach"
+                    )
             else:
                 print(f"  USDA API returned status {response.status_code}")
 
@@ -525,6 +637,7 @@ def _get_curated_usda_wa():
 # Refuge Restrooms
 # ---------------------------------------------------------------------------
 
+
 def fetch_refuge_restrooms_wa():
     # type: () -> List[Dict]
     """
@@ -578,20 +691,22 @@ def fetch_refuge_restrooms_wa():
                         if r.get("comment"):
                             desc_parts.append(r["comment"])
 
-                        facilities.append({
-                            "name": name,
-                            "category": "restroom",
-                            "subcategory": "restroom",
-                            "latitude": rlat,
-                            "longitude": rlon,
-                            "description": ". ".join(desc_parts)[:500],
-                            "address": r.get("street", ""),
-                            "phone": "",
-                            "website": "",
-                            "source": "Refuge Restrooms",
-                            "wheelchair_accessible": bool(r.get("accessible")),
-                            "has_baby_changing": bool(r.get("changing_table")),
-                        })
+                        facilities.append(
+                            {
+                                "name": name,
+                                "category": "restroom",
+                                "subcategory": "restroom",
+                                "latitude": rlat,
+                                "longitude": rlon,
+                                "description": ". ".join(desc_parts)[:500],
+                                "address": r.get("street", ""),
+                                "phone": "",
+                                "website": "",
+                                "source": "Refuge Restrooms",
+                                "wheelchair_accessible": bool(r.get("accessible")),
+                                "has_baby_changing": bool(r.get("changing_table")),
+                            }
+                        )
                         city_count += 1
 
                     if city_count > 0:
@@ -619,83 +734,115 @@ def _get_curated_restrooms():
     return [
         {
             "name": "Pike Place Market Public Restroom",
-            "category": "restroom", "subcategory": "restroom",
-            "latitude": 47.6097, "longitude": -122.3425,
+            "category": "restroom",
+            "subcategory": "restroom",
+            "latitude": 47.6097,
+            "longitude": -122.3425,
             "description": "Public restroom at Pike Place Market, lower level near the parking garage.",
             "address": "85 Pike St, Seattle, WA 98101",
-            "phone": "", "website": "",
+            "phone": "",
+            "website": "",
             "source": "Refuge Restrooms",
-            "wheelchair_accessible": True, "has_baby_changing": True,
+            "wheelchair_accessible": True,
+            "has_baby_changing": True,
         },
         {
             "name": "Pioneer Square Public Restroom",
-            "category": "restroom", "subcategory": "restroom",
-            "latitude": 47.6020, "longitude": -122.3340,
+            "category": "restroom",
+            "subcategory": "restroom",
+            "latitude": 47.6020,
+            "longitude": -122.3340,
             "description": "Portland Loo style public restroom in Pioneer Square.",
             "address": "Pioneer Square, Seattle, WA 98104",
-            "phone": "", "website": "",
+            "phone": "",
+            "website": "",
             "source": "Refuge Restrooms",
-            "wheelchair_accessible": True, "has_baby_changing": False,
+            "wheelchair_accessible": True,
+            "has_baby_changing": False,
         },
         {
             "name": "Seattle Center Armory Restroom",
-            "category": "restroom", "subcategory": "restroom",
-            "latitude": 47.6215, "longitude": -122.3520,
+            "category": "restroom",
+            "subcategory": "restroom",
+            "latitude": 47.6215,
+            "longitude": -122.3520,
             "description": "Public restroom inside the Seattle Center Armory building.",
             "address": "305 Harrison St, Seattle, WA 98109",
-            "phone": "", "website": "",
+            "phone": "",
+            "website": "",
             "source": "Refuge Restrooms",
-            "wheelchair_accessible": True, "has_baby_changing": True,
+            "wheelchair_accessible": True,
+            "has_baby_changing": True,
         },
         {
             "name": "Cal Anderson Park Restroom",
-            "category": "restroom", "subcategory": "restroom",
-            "latitude": 47.6174, "longitude": -122.3193,
+            "category": "restroom",
+            "subcategory": "restroom",
+            "latitude": 47.6174,
+            "longitude": -122.3193,
             "description": "Public restroom in Cal Anderson Park, Capitol Hill.",
             "address": "1635 11th Ave, Seattle, WA 98122",
-            "phone": "", "website": "",
+            "phone": "",
+            "website": "",
             "source": "Refuge Restrooms",
-            "wheelchair_accessible": True, "has_baby_changing": False,
+            "wheelchair_accessible": True,
+            "has_baby_changing": False,
         },
         {
             "name": "Westlake Park Public Restroom",
-            "category": "restroom", "subcategory": "restroom",
-            "latitude": 47.6110, "longitude": -122.3370,
+            "category": "restroom",
+            "subcategory": "restroom",
+            "latitude": 47.6110,
+            "longitude": -122.3370,
             "description": "Portland Loo public restroom at Westlake Park.",
             "address": "401 Pine St, Seattle, WA 98101",
-            "phone": "", "website": "",
+            "phone": "",
+            "website": "",
             "source": "Refuge Restrooms",
-            "wheelchair_accessible": True, "has_baby_changing": False,
+            "wheelchair_accessible": True,
+            "has_baby_changing": False,
         },
         {
             "name": "Green Lake Park Restroom (North)",
-            "category": "restroom", "subcategory": "restroom",
-            "latitude": 47.6815, "longitude": -122.3400,
+            "category": "restroom",
+            "subcategory": "restroom",
+            "latitude": 47.6815,
+            "longitude": -122.3400,
             "description": "Public restroom near the north end of Green Lake.",
             "address": "7201 E Green Lake Dr N, Seattle, WA 98115",
-            "phone": "", "website": "",
+            "phone": "",
+            "website": "",
             "source": "Refuge Restrooms",
-            "wheelchair_accessible": True, "has_baby_changing": False,
+            "wheelchair_accessible": True,
+            "has_baby_changing": False,
         },
         {
             "name": "Volunteer Park Restroom",
-            "category": "restroom", "subcategory": "restroom",
-            "latitude": 47.6305, "longitude": -122.3158,
+            "category": "restroom",
+            "subcategory": "restroom",
+            "latitude": 47.6305,
+            "longitude": -122.3158,
             "description": "Public restroom in Volunteer Park near the water tower.",
             "address": "1247 15th Ave E, Seattle, WA 98112",
-            "phone": "", "website": "",
+            "phone": "",
+            "website": "",
             "source": "Refuge Restrooms",
-            "wheelchair_accessible": True, "has_baby_changing": False,
+            "wheelchair_accessible": True,
+            "has_baby_changing": False,
         },
         {
             "name": "Tacoma Union Station Restroom",
-            "category": "restroom", "subcategory": "restroom",
-            "latitude": 47.2529, "longitude": -122.4395,
+            "category": "restroom",
+            "subcategory": "restroom",
+            "latitude": 47.2529,
+            "longitude": -122.4395,
             "description": "Public restroom inside Union Station, Tacoma.",
             "address": "1717 Pacific Ave, Tacoma, WA 98402",
-            "phone": "", "website": "",
+            "phone": "",
+            "website": "",
             "source": "Refuge Restrooms",
-            "wheelchair_accessible": True, "has_baby_changing": True,
+            "wheelchair_accessible": True,
+            "has_baby_changing": True,
         },
     ]
 
@@ -703,6 +850,7 @@ def _get_curated_restrooms():
 # ---------------------------------------------------------------------------
 # Seattle Drinking Fountains
 # ---------------------------------------------------------------------------
+
 
 def fetch_seattle_fountains():
     # type: () -> List[Dict]
@@ -743,12 +891,19 @@ def fetch_seattle_fountains():
             # API uses LIFE_CYCLE_CODE: A=Active, CURRENT_STATUS for closures
             lifecycle = (attrs.get("LIFE_CYCLE_CODE") or "A").upper()
             current_status = (attrs.get("CURRENT_STATUS") or "").upper()
-            if lifecycle not in ("A", "ACTIVE", "") or current_status in ("REMOVED", "DECOMMISSIONED"):
+            if lifecycle not in ("A", "ACTIVE", "") or current_status in (
+                "REMOVED",
+                "DECOMMISSIONED",
+            ):
                 continue
 
             equipdesc = attrs.get("EQUIPDESC") or ""
             park = attrs.get("PARK") or ""
-            name = equipdesc if equipdesc else ("Drinking Fountain - %s" % park if park else "Drinking Fountain")
+            name = (
+                equipdesc
+                if equipdesc
+                else ("Drinking Fountain - %s" % park if park else "Drinking Fountain")
+            )
             desc_parts = ["Public drinking fountain"]
 
             if park:
@@ -759,23 +914,30 @@ def fetch_seattle_fountains():
                 desc_parts.append("Dog bowl available")
 
             bottle_filler = attrs.get("BOTTLE_FILLER") or ""
-            if bottle_filler and str(bottle_filler).upper() in ("YES", "Y", "1", "TRUE"):
+            if bottle_filler and str(bottle_filler).upper() in (
+                "YES",
+                "Y",
+                "1",
+                "TRUE",
+            ):
                 desc_parts.append("Bottle filler available")
 
-            facilities.append({
-                "name": name[:255],
-                "category": "water_fountain",
-                "subcategory": "water_fountain",
-                "latitude": lat,
-                "longitude": lon,
-                "description": ". ".join(desc_parts),
-                "address": park if park else "",
-                "phone": "",
-                "website": "",
-                "source": "Seattle GeoData",
-                "wheelchair_accessible": True,
-                "has_baby_changing": False,
-            })
+            facilities.append(
+                {
+                    "name": name[:255],
+                    "category": "water_fountain",
+                    "subcategory": "water_fountain",
+                    "latitude": lat,
+                    "longitude": lon,
+                    "description": ". ".join(desc_parts),
+                    "address": park if park else "",
+                    "phone": "",
+                    "website": "",
+                    "source": "Seattle GeoData",
+                    "wheelchair_accessible": True,
+                    "has_baby_changing": False,
+                }
+            )
 
     except Exception as e:
         print(f"  Seattle Fountains fetch error: {e}")
@@ -792,26 +954,98 @@ def _get_curated_fountains():
     # type: () -> List[Dict]
     """Curated fallback drinking fountain locations in Seattle."""
     base = {
-        "category": "water_fountain", "subcategory": "water_fountain",
-        "phone": "", "website": "", "source": "Seattle GeoData",
-        "wheelchair_accessible": True, "has_baby_changing": False,
+        "category": "water_fountain",
+        "subcategory": "water_fountain",
+        "phone": "",
+        "website": "",
+        "source": "Seattle GeoData",
+        "wheelchair_accessible": True,
+        "has_baby_changing": False,
     }
     entries = [
-        ("Green Lake Park Fountain", 47.6812, -122.3408, "Public drinking fountain in Green Lake Park.", "Green Lake Park, Seattle, WA"),
-        ("Cal Anderson Park Fountain", 47.6175, -122.3195, "Public drinking fountain in Cal Anderson Park.", "Cal Anderson Park, Seattle, WA"),
-        ("Volunteer Park Fountain", 47.6306, -122.3155, "Public drinking fountain in Volunteer Park.", "Volunteer Park, Seattle, WA"),
-        ("Gas Works Park Fountain", 47.6456, -122.3344, "Public drinking fountain in Gas Works Park.", "Gas Works Park, Seattle, WA"),
-        ("Kerry Park Fountain", 47.6295, -122.3601, "Public drinking fountain near Kerry Park viewpoint.", "Kerry Park, Seattle, WA"),
-        ("Discovery Park Fountain", 47.6573, -122.4057, "Public drinking fountain at Discovery Park visitor center.", "Discovery Park, Seattle, WA"),
-        ("Seward Park Fountain", 47.5517, -122.2533, "Public drinking fountain in Seward Park.", "Seward Park, Seattle, WA"),
-        ("Woodland Park Fountain", 47.6690, -122.3503, "Public drinking fountain in Woodland Park.", "Woodland Park, Seattle, WA"),
-        ("Lincoln Park Fountain", 47.5314, -122.3934, "Public drinking fountain in Lincoln Park.", "Lincoln Park, Seattle, WA"),
-        ("Magnuson Park Fountain", 47.6836, -122.2563, "Public drinking fountain in Magnuson Park.", "Magnuson Park, Seattle, WA"),
+        (
+            "Green Lake Park Fountain",
+            47.6812,
+            -122.3408,
+            "Public drinking fountain in Green Lake Park.",
+            "Green Lake Park, Seattle, WA",
+        ),
+        (
+            "Cal Anderson Park Fountain",
+            47.6175,
+            -122.3195,
+            "Public drinking fountain in Cal Anderson Park.",
+            "Cal Anderson Park, Seattle, WA",
+        ),
+        (
+            "Volunteer Park Fountain",
+            47.6306,
+            -122.3155,
+            "Public drinking fountain in Volunteer Park.",
+            "Volunteer Park, Seattle, WA",
+        ),
+        (
+            "Gas Works Park Fountain",
+            47.6456,
+            -122.3344,
+            "Public drinking fountain in Gas Works Park.",
+            "Gas Works Park, Seattle, WA",
+        ),
+        (
+            "Kerry Park Fountain",
+            47.6295,
+            -122.3601,
+            "Public drinking fountain near Kerry Park viewpoint.",
+            "Kerry Park, Seattle, WA",
+        ),
+        (
+            "Discovery Park Fountain",
+            47.6573,
+            -122.4057,
+            "Public drinking fountain at Discovery Park visitor center.",
+            "Discovery Park, Seattle, WA",
+        ),
+        (
+            "Seward Park Fountain",
+            47.5517,
+            -122.2533,
+            "Public drinking fountain in Seward Park.",
+            "Seward Park, Seattle, WA",
+        ),
+        (
+            "Woodland Park Fountain",
+            47.6690,
+            -122.3503,
+            "Public drinking fountain in Woodland Park.",
+            "Woodland Park, Seattle, WA",
+        ),
+        (
+            "Lincoln Park Fountain",
+            47.5314,
+            -122.3934,
+            "Public drinking fountain in Lincoln Park.",
+            "Lincoln Park, Seattle, WA",
+        ),
+        (
+            "Magnuson Park Fountain",
+            47.6836,
+            -122.2563,
+            "Public drinking fountain in Magnuson Park.",
+            "Magnuson Park, Seattle, WA",
+        ),
     ]
     result = []
     for name, lat, lon, desc, addr in entries:
         item = dict(base)
-        item.update({"name": name, "latitude": lat, "longitude": lon, "description": desc, "address": addr})
+        item.update(
+            {
+                "name": name,
+                "latitude": lat,
+                "longitude": lon,
+                "description": desc,
+                "address": addr,
+            }
+        )
         result.append(item)
     return result
 
@@ -819,6 +1053,7 @@ def _get_curated_fountains():
 # ---------------------------------------------------------------------------
 # Seattle Public WiFi
 # ---------------------------------------------------------------------------
+
 
 def fetch_seattle_wifi():
     # type: () -> List[Dict]
@@ -850,21 +1085,27 @@ def fetch_seattle_wifi():
                         or (item.get("location", {}) or {}).get("longitude")
                     )
                     if lat and lon and is_in_washington(lat, lon):
-                        name = item.get("name") or item.get("location_name") or "Public WiFi"
-                        facilities.append({
-                            "name": name,
-                            "category": "wifi",
-                            "subcategory": "wifi",
-                            "latitude": lat,
-                            "longitude": lon,
-                            "description": "Free public WiFi hotspot",
-                            "address": item.get("address", ""),
-                            "phone": "",
-                            "website": "",
-                            "source": "Seattle Open Data",
-                            "wheelchair_accessible": True,
-                            "has_baby_changing": False,
-                        })
+                        name = (
+                            item.get("name")
+                            or item.get("location_name")
+                            or "Public WiFi"
+                        )
+                        facilities.append(
+                            {
+                                "name": name,
+                                "category": "wifi",
+                                "subcategory": "wifi",
+                                "latitude": lat,
+                                "longitude": lon,
+                                "description": "Free public WiFi hotspot",
+                                "address": item.get("address", ""),
+                                "phone": "",
+                                "website": "",
+                                "source": "Seattle Open Data",
+                                "wheelchair_accessible": True,
+                                "has_baby_changing": False,
+                            }
+                        )
             else:
                 print(f"  Seattle WiFi API returned {resp.status_code}")
 
@@ -883,48 +1124,239 @@ def _get_curated_wifi():
     # type: () -> List[Dict]
     """Curated free public WiFi locations — Seattle Public Library branches and civic buildings."""
     base = {
-        "category": "wifi", "subcategory": "wifi",
-        "phone": "(206) 386-4636", "website": "https://www.spl.org",
+        "category": "wifi",
+        "subcategory": "wifi",
+        "phone": "(206) 386-4636",
+        "website": "https://www.spl.org",
         "source": "Seattle Open Data",
-        "wheelchair_accessible": True, "has_baby_changing": False,
+        "wheelchair_accessible": True,
+        "has_baby_changing": False,
     }
     entries = [
-        ("Seattle Central Library", 47.6067, -122.3325, "1000 Fourth Ave, Seattle, WA 98104", "Free WiFi at Seattle Central Library. Open to the public."),
-        ("Capitol Hill Branch Library", 47.6231, -122.3209, "425 Harvard Ave E, Seattle, WA 98102", "Free WiFi at Capitol Hill Branch Library."),
-        ("Ballard Branch Library", 47.6688, -122.3843, "5614 22nd Ave NW, Seattle, WA 98107", "Free WiFi at Ballard Branch Library."),
-        ("University Branch Library", 47.6611, -122.3142, "5009 Roosevelt Way NE, Seattle, WA 98105", "Free WiFi at University Branch Library."),
-        ("Columbia City Branch Library", 47.5601, -122.2862, "4721 Rainier Ave S, Seattle, WA 98118", "Free WiFi at Columbia City Branch Library."),
-        ("Beacon Hill Branch Library", 47.5681, -122.3112, "2821 Beacon Ave S, Seattle, WA 98144", "Free WiFi at Beacon Hill Branch Library."),
-        ("Fremont Branch Library", 47.6510, -122.3499, "731 N 35th St, Seattle, WA 98103", "Free WiFi at Fremont Branch Library."),
-        ("Greenwood Branch Library", 47.6930, -122.3556, "8016 Greenwood Ave N, Seattle, WA 98103", "Free WiFi at Greenwood Branch Library."),
-        ("Rainier Beach Branch Library", 47.5103, -122.2666, "9125 Rainier Ave S, Seattle, WA 98118", "Free WiFi at Rainier Beach Branch Library."),
-        ("West Seattle Branch Library", 47.5605, -122.3877, "2306 42nd Ave SW, Seattle, WA 98116", "Free WiFi at West Seattle Branch Library."),
-        ("Douglass-Truth Branch Library", 47.6125, -122.2992, "2300 E Yesler Way, Seattle, WA 98122", "Free WiFi at Douglass-Truth Branch Library."),
-        ("Magnolia Branch Library", 47.6401, -122.3989, "2801 34th Ave W, Seattle, WA 98199", "Free WiFi at Magnolia Branch Library."),
-        ("Northeast Branch Library", 47.7113, -122.3282, "6801 35th Ave NE, Seattle, WA 98115", "Free WiFi at Northeast Branch Library."),
-        ("Northgate Branch Library", 47.7075, -122.3267, "10548 5th Ave NE, Seattle, WA 98125", "Free WiFi at Northgate Branch Library."),
-        ("Queen Anne Branch Library", 47.6363, -122.3575, "400 W Garfield St, Seattle, WA 98119", "Free WiFi at Queen Anne Branch Library."),
-        ("South Park Branch Library", 47.5267, -122.3212, "8604 8th Ave S, Seattle, WA 98108", "Free WiFi at South Park Branch Library."),
-        ("Wallingford Branch Library", 47.6617, -122.3345, "1501 N 45th St, Seattle, WA 98103", "Free WiFi at Wallingford Branch Library."),
-        ("High Point Branch Library", 47.5439, -122.3728, "3411 SW Raymond St, Seattle, WA 98126", "Free WiFi at High Point Branch Library."),
-        ("International District Branch Library", 47.5990, -122.3233, "713 8th Ave S, Seattle, WA 98104", "Free WiFi at International District Branch Library."),
-        ("Lake City Branch Library", 47.7192, -122.2937, "12501 28th Ave NE, Seattle, WA 98125", "Free WiFi at Lake City Branch Library."),
-        ("Madrona-Sally Goldmark Branch Library", 47.6121, -122.2888, "1134 33rd Ave, Seattle, WA 98122", "Free WiFi at Madrona-Sally Goldmark Branch Library."),
-        ("Montlake Branch Library", 47.6373, -122.3043, "2401 24th Ave E, Seattle, WA 98112", "Free WiFi at Montlake Branch Library."),
-        ("NewHolly Branch Library", 47.5417, -122.2905, "7058 32nd Ave S, Seattle, WA 98118", "Free WiFi at NewHolly Branch Library."),
-        ("Broadview Branch Library", 47.7235, -122.3558, "12755 Greenwood Ave N, Seattle, WA 98133", "Free WiFi at Broadview Branch Library."),
-        ("Delridge Branch Library", 47.5586, -122.3646, "5423 Delridge Way SW, Seattle, WA 98106", "Free WiFi at Delridge Branch Library."),
-        ("Green Lake Branch Library", 47.6795, -122.3290, "7364 E Green Lake Dr N, Seattle, WA 98115", "Free WiFi at Green Lake Branch Library."),
-        ("Southwest Branch Library", 47.5224, -122.3607, "9010 35th Ave SW, Seattle, WA 98126", "Free WiFi at Southwest Branch Library."),
+        (
+            "Seattle Central Library",
+            47.6067,
+            -122.3325,
+            "1000 Fourth Ave, Seattle, WA 98104",
+            "Free WiFi at Seattle Central Library. Open to the public.",
+        ),
+        (
+            "Capitol Hill Branch Library",
+            47.6231,
+            -122.3209,
+            "425 Harvard Ave E, Seattle, WA 98102",
+            "Free WiFi at Capitol Hill Branch Library.",
+        ),
+        (
+            "Ballard Branch Library",
+            47.6688,
+            -122.3843,
+            "5614 22nd Ave NW, Seattle, WA 98107",
+            "Free WiFi at Ballard Branch Library.",
+        ),
+        (
+            "University Branch Library",
+            47.6611,
+            -122.3142,
+            "5009 Roosevelt Way NE, Seattle, WA 98105",
+            "Free WiFi at University Branch Library.",
+        ),
+        (
+            "Columbia City Branch Library",
+            47.5601,
+            -122.2862,
+            "4721 Rainier Ave S, Seattle, WA 98118",
+            "Free WiFi at Columbia City Branch Library.",
+        ),
+        (
+            "Beacon Hill Branch Library",
+            47.5681,
+            -122.3112,
+            "2821 Beacon Ave S, Seattle, WA 98144",
+            "Free WiFi at Beacon Hill Branch Library.",
+        ),
+        (
+            "Fremont Branch Library",
+            47.6510,
+            -122.3499,
+            "731 N 35th St, Seattle, WA 98103",
+            "Free WiFi at Fremont Branch Library.",
+        ),
+        (
+            "Greenwood Branch Library",
+            47.6930,
+            -122.3556,
+            "8016 Greenwood Ave N, Seattle, WA 98103",
+            "Free WiFi at Greenwood Branch Library.",
+        ),
+        (
+            "Rainier Beach Branch Library",
+            47.5103,
+            -122.2666,
+            "9125 Rainier Ave S, Seattle, WA 98118",
+            "Free WiFi at Rainier Beach Branch Library.",
+        ),
+        (
+            "West Seattle Branch Library",
+            47.5605,
+            -122.3877,
+            "2306 42nd Ave SW, Seattle, WA 98116",
+            "Free WiFi at West Seattle Branch Library.",
+        ),
+        (
+            "Douglass-Truth Branch Library",
+            47.6125,
+            -122.2992,
+            "2300 E Yesler Way, Seattle, WA 98122",
+            "Free WiFi at Douglass-Truth Branch Library.",
+        ),
+        (
+            "Magnolia Branch Library",
+            47.6401,
+            -122.3989,
+            "2801 34th Ave W, Seattle, WA 98199",
+            "Free WiFi at Magnolia Branch Library.",
+        ),
+        (
+            "Northeast Branch Library",
+            47.7113,
+            -122.3282,
+            "6801 35th Ave NE, Seattle, WA 98115",
+            "Free WiFi at Northeast Branch Library.",
+        ),
+        (
+            "Northgate Branch Library",
+            47.7075,
+            -122.3267,
+            "10548 5th Ave NE, Seattle, WA 98125",
+            "Free WiFi at Northgate Branch Library.",
+        ),
+        (
+            "Queen Anne Branch Library",
+            47.6363,
+            -122.3575,
+            "400 W Garfield St, Seattle, WA 98119",
+            "Free WiFi at Queen Anne Branch Library.",
+        ),
+        (
+            "South Park Branch Library",
+            47.5267,
+            -122.3212,
+            "8604 8th Ave S, Seattle, WA 98108",
+            "Free WiFi at South Park Branch Library.",
+        ),
+        (
+            "Wallingford Branch Library",
+            47.6617,
+            -122.3345,
+            "1501 N 45th St, Seattle, WA 98103",
+            "Free WiFi at Wallingford Branch Library.",
+        ),
+        (
+            "High Point Branch Library",
+            47.5439,
+            -122.3728,
+            "3411 SW Raymond St, Seattle, WA 98126",
+            "Free WiFi at High Point Branch Library.",
+        ),
+        (
+            "International District Branch Library",
+            47.5990,
+            -122.3233,
+            "713 8th Ave S, Seattle, WA 98104",
+            "Free WiFi at International District Branch Library.",
+        ),
+        (
+            "Lake City Branch Library",
+            47.7192,
+            -122.2937,
+            "12501 28th Ave NE, Seattle, WA 98125",
+            "Free WiFi at Lake City Branch Library.",
+        ),
+        (
+            "Madrona-Sally Goldmark Branch Library",
+            47.6121,
+            -122.2888,
+            "1134 33rd Ave, Seattle, WA 98122",
+            "Free WiFi at Madrona-Sally Goldmark Branch Library.",
+        ),
+        (
+            "Montlake Branch Library",
+            47.6373,
+            -122.3043,
+            "2401 24th Ave E, Seattle, WA 98112",
+            "Free WiFi at Montlake Branch Library.",
+        ),
+        (
+            "NewHolly Branch Library",
+            47.5417,
+            -122.2905,
+            "7058 32nd Ave S, Seattle, WA 98118",
+            "Free WiFi at NewHolly Branch Library.",
+        ),
+        (
+            "Broadview Branch Library",
+            47.7235,
+            -122.3558,
+            "12755 Greenwood Ave N, Seattle, WA 98133",
+            "Free WiFi at Broadview Branch Library.",
+        ),
+        (
+            "Delridge Branch Library",
+            47.5586,
+            -122.3646,
+            "5423 Delridge Way SW, Seattle, WA 98106",
+            "Free WiFi at Delridge Branch Library.",
+        ),
+        (
+            "Green Lake Branch Library",
+            47.6795,
+            -122.3290,
+            "7364 E Green Lake Dr N, Seattle, WA 98115",
+            "Free WiFi at Green Lake Branch Library.",
+        ),
+        (
+            "Southwest Branch Library",
+            47.5224,
+            -122.3607,
+            "9010 35th Ave SW, Seattle, WA 98126",
+            "Free WiFi at Southwest Branch Library.",
+        ),
         # Civic buildings
-        ("Seattle City Hall", 47.6039, -122.3303, "600 4th Ave, Seattle, WA 98104", "Free public WiFi in Seattle City Hall lobby."),
-        ("Seattle Center", 47.6215, -122.3530, "305 Harrison St, Seattle, WA 98109", "Free public WiFi at Seattle Center campus."),
-        ("King County Customer Service Center", 47.6013, -122.3316, "201 S Jackson St, Seattle, WA 98104", "Free public WiFi at King County Customer Service Center."),
+        (
+            "Seattle City Hall",
+            47.6039,
+            -122.3303,
+            "600 4th Ave, Seattle, WA 98104",
+            "Free public WiFi in Seattle City Hall lobby.",
+        ),
+        (
+            "Seattle Center",
+            47.6215,
+            -122.3530,
+            "305 Harrison St, Seattle, WA 98109",
+            "Free public WiFi at Seattle Center campus.",
+        ),
+        (
+            "King County Customer Service Center",
+            47.6013,
+            -122.3316,
+            "201 S Jackson St, Seattle, WA 98104",
+            "Free public WiFi at King County Customer Service Center.",
+        ),
     ]
     result = []
     for name, lat, lon, addr, desc in entries:
         item = dict(base)
-        item.update({"name": name, "latitude": lat, "longitude": lon, "address": addr, "description": desc})
+        item.update(
+            {
+                "name": name,
+                "latitude": lat,
+                "longitude": lon,
+                "address": addr,
+                "description": desc,
+            }
+        )
         # Civic buildings don't have library phone/website
         if "Library" not in name:
             item["phone"] = ""
@@ -936,6 +1368,7 @@ def _get_curated_wifi():
 # ---------------------------------------------------------------------------
 # WA State Parks Facilities
 # ---------------------------------------------------------------------------
+
 
 def fetch_wa_parks_facilities():
     # type: () -> List[Dict]
@@ -987,11 +1420,15 @@ def fetch_wa_parks_facilities():
 
             # Get facility type and map to our category
             ftype = (
-                attrs.get("FACILITY_TYPE")
-                or attrs.get("FacilityType")
-                or attrs.get("TYPE")
-                or ""
-            ).upper().strip()
+                (
+                    attrs.get("FACILITY_TYPE")
+                    or attrs.get("FacilityType")
+                    or attrs.get("TYPE")
+                    or ""
+                )
+                .upper()
+                .strip()
+            )
 
             category = None
             for key, cat in facility_type_map.items():
@@ -1008,22 +1445,27 @@ def fetch_wa_parks_facilities():
                 or attrs.get("PARK")
                 or "WA State Park"
             )
-            facility_name = attrs.get("FACILITY_NAME") or attrs.get("Name") or ftype.title()
+            facility_name = (
+                attrs.get("FACILITY_NAME") or attrs.get("Name") or ftype.title()
+            )
 
-            facilities.append({
-                "name": "%s - %s" % (park_name, facility_name),
-                "category": category,
-                "subcategory": category,
-                "latitude": lat,
-                "longitude": lon,
-                "description": "%s facility at %s (WA State Parks)" % (ftype.title(), park_name),
-                "address": park_name,
-                "phone": "",
-                "website": "https://parks.wa.gov",
-                "source": "WA State Parks",
-                "wheelchair_accessible": True,
-                "has_baby_changing": False,
-            })
+            facilities.append(
+                {
+                    "name": "%s - %s" % (park_name, facility_name),
+                    "category": category,
+                    "subcategory": category,
+                    "latitude": lat,
+                    "longitude": lon,
+                    "description": "%s facility at %s (WA State Parks)"
+                    % (ftype.title(), park_name),
+                    "address": park_name,
+                    "phone": "",
+                    "website": "https://parks.wa.gov",
+                    "source": "WA State Parks",
+                    "wheelchair_accessible": True,
+                    "has_baby_changing": False,
+                }
+            )
 
     except Exception as e:
         print(f"  WA State Parks fetch error: {e}")
@@ -1040,34 +1482,133 @@ def _get_curated_parks():
     # type: () -> List[Dict]
     """Curated fallback WA State Parks facilities."""
     base = {
-        "phone": "", "website": "https://parks.wa.gov", "source": "WA State Parks",
-        "wheelchair_accessible": True, "has_baby_changing": False,
+        "phone": "",
+        "website": "https://parks.wa.gov",
+        "source": "WA State Parks",
+        "wheelchair_accessible": True,
+        "has_baby_changing": False,
     }
     entries = [
-        ("Deception Pass SP - Restroom (Cranberry Lake)", "restroom", 48.3963, -122.6490, "Restroom facility at Cranberry Lake area, Deception Pass State Park."),
-        ("Deception Pass SP - Restroom (West Beach)", "restroom", 48.3996, -122.6551, "Restroom facility at West Beach, Deception Pass State Park."),
-        ("Deception Pass SP - Picnic Shelter", "shelter", 48.3970, -122.6485, "Covered picnic shelter at Deception Pass State Park."),
-        ("Fort Worden SP - Restroom", "restroom", 48.1374, -122.7654, "Restroom facility at Fort Worden Historical State Park."),
-        ("Fort Worden SP - Picnic Shelter", "shelter", 48.1370, -122.7640, "Covered picnic shelter at Fort Worden Historical State Park."),
-        ("Moran SP - Restroom (Mountain Lake)", "restroom", 48.6671, -122.8340, "Restroom facility near Mountain Lake, Moran State Park."),
-        ("Moran SP - Shelter", "shelter", 48.6665, -122.8335, "Covered shelter at Moran State Park, Orcas Island."),
-        ("Palouse Falls SP - Restroom", "restroom", 46.6639, -118.2268, "Vault toilet at Palouse Falls State Park."),
-        ("Cape Disappointment SP - Restroom", "restroom", 46.2818, -124.0501, "Restroom facility at Cape Disappointment State Park."),
-        ("Beacon Rock SP - Restroom", "restroom", 45.6286, -122.0226, "Restroom facility at Beacon Rock State Park."),
-        ("Riverside SP - Restroom", "restroom", 47.8433, -117.5023, "Restroom facility at Riverside State Park, Spokane."),
-        ("Riverside SP - Bench", "bench", 47.8440, -117.5030, "Bench along the Spokane River trail at Riverside State Park."),
-        ("Sun Lakes-Dry Falls SP - Restroom", "restroom", 47.5851, -119.3733, "Restroom facility at Sun Lakes-Dry Falls State Park."),
-        ("Larrabee SP - Restroom", "restroom", 48.6537, -122.4910, "Restroom facility at Larrabee State Park, Bellingham."),
-        ("Saltwater SP - Restroom", "restroom", 47.3726, -122.3270, "Restroom facility at Saltwater State Park, Des Moines."),
+        (
+            "Deception Pass SP - Restroom (Cranberry Lake)",
+            "restroom",
+            48.3963,
+            -122.6490,
+            "Restroom facility at Cranberry Lake area, Deception Pass State Park.",
+        ),
+        (
+            "Deception Pass SP - Restroom (West Beach)",
+            "restroom",
+            48.3996,
+            -122.6551,
+            "Restroom facility at West Beach, Deception Pass State Park.",
+        ),
+        (
+            "Deception Pass SP - Picnic Shelter",
+            "shelter",
+            48.3970,
+            -122.6485,
+            "Covered picnic shelter at Deception Pass State Park.",
+        ),
+        (
+            "Fort Worden SP - Restroom",
+            "restroom",
+            48.1374,
+            -122.7654,
+            "Restroom facility at Fort Worden Historical State Park.",
+        ),
+        (
+            "Fort Worden SP - Picnic Shelter",
+            "shelter",
+            48.1370,
+            -122.7640,
+            "Covered picnic shelter at Fort Worden Historical State Park.",
+        ),
+        (
+            "Moran SP - Restroom (Mountain Lake)",
+            "restroom",
+            48.6671,
+            -122.8340,
+            "Restroom facility near Mountain Lake, Moran State Park.",
+        ),
+        (
+            "Moran SP - Shelter",
+            "shelter",
+            48.6665,
+            -122.8335,
+            "Covered shelter at Moran State Park, Orcas Island.",
+        ),
+        (
+            "Palouse Falls SP - Restroom",
+            "restroom",
+            46.6639,
+            -118.2268,
+            "Vault toilet at Palouse Falls State Park.",
+        ),
+        (
+            "Cape Disappointment SP - Restroom",
+            "restroom",
+            46.2818,
+            -124.0501,
+            "Restroom facility at Cape Disappointment State Park.",
+        ),
+        (
+            "Beacon Rock SP - Restroom",
+            "restroom",
+            45.6286,
+            -122.0226,
+            "Restroom facility at Beacon Rock State Park.",
+        ),
+        (
+            "Riverside SP - Restroom",
+            "restroom",
+            47.8433,
+            -117.5023,
+            "Restroom facility at Riverside State Park, Spokane.",
+        ),
+        (
+            "Riverside SP - Bench",
+            "bench",
+            47.8440,
+            -117.5030,
+            "Bench along the Spokane River trail at Riverside State Park.",
+        ),
+        (
+            "Sun Lakes-Dry Falls SP - Restroom",
+            "restroom",
+            47.5851,
+            -119.3733,
+            "Restroom facility at Sun Lakes-Dry Falls State Park.",
+        ),
+        (
+            "Larrabee SP - Restroom",
+            "restroom",
+            48.6537,
+            -122.4910,
+            "Restroom facility at Larrabee State Park, Bellingham.",
+        ),
+        (
+            "Saltwater SP - Restroom",
+            "restroom",
+            47.3726,
+            -122.3270,
+            "Restroom facility at Saltwater State Park, Des Moines.",
+        ),
     ]
     result = []
     for name, cat, lat, lon, desc in entries:
         item = dict(base)
-        item.update({
-            "name": name, "category": cat, "subcategory": cat,
-            "latitude": lat, "longitude": lon, "description": desc,
-            "address": name.split(" - ")[0],
-        })
+        item.update(
+            {
+                "name": name,
+                "category": cat,
+                "subcategory": cat,
+                "latitude": lat,
+                "longitude": lon,
+                "description": desc,
+                "address": name.split(" - ")[0],
+            }
+        )
         result.append(item)
     return result
 
@@ -1075,6 +1616,7 @@ def _get_curated_parks():
 # ---------------------------------------------------------------------------
 # King County Metro Transit Shelters
 # ---------------------------------------------------------------------------
+
 
 def fetch_kc_metro_shelters():
     # type: () -> List[Dict]
@@ -1134,25 +1676,31 @@ def fetch_kc_metro_shelters():
 
             jurisdiction = attrs.get("JURISDICTION") or ""
 
-                # OBA Puget Sound uses "1_XXXXX" for King County Metro stops
+            # OBA Puget Sound uses "1_XXXXX" for King County Metro stops
             stop_id = attrs.get("STOP_ID")
             oba_id = "1_%s" % stop_id if stop_id else None
 
-            facilities.append({
-                "name": stop_name[:255],
-                "category": "transit",
-                "subcategory": "transit",
-                "latitude": lat,
-                "longitude": lon,
-                "description": ". ".join(desc_parts),
-                "address": ("%s & %s, %s" % (on_street, cross_street, jurisdiction)).strip(", ") if on_street else "",
-                "phone": "",
-                "website": "https://kingcounty.gov/metro",
-                "source": "KC Metro",
-                "wheelchair_accessible": True,
-                "has_baby_changing": False,
-                "external_id": oba_id,
-            })
+            facilities.append(
+                {
+                    "name": stop_name[:255],
+                    "category": "transit",
+                    "subcategory": "transit",
+                    "latitude": lat,
+                    "longitude": lon,
+                    "description": ". ".join(desc_parts),
+                    "address": (
+                        "%s & %s, %s" % (on_street, cross_street, jurisdiction)
+                    ).strip(", ")
+                    if on_street
+                    else "",
+                    "phone": "",
+                    "website": "https://kingcounty.gov/metro",
+                    "source": "KC Metro",
+                    "wheelchair_accessible": True,
+                    "has_baby_changing": False,
+                    "external_id": oba_id,
+                }
+            )
 
     except Exception as e:
         print(f"  KC Metro fetch error: {e}")
@@ -1169,32 +1717,133 @@ def _get_curated_transit():
     # type: () -> List[Dict]
     """Curated fallback transit shelter/hub locations."""
     base = {
-        "category": "transit", "subcategory": "transit",
-        "phone": "", "website": "https://kingcounty.gov/metro",
+        "category": "transit",
+        "subcategory": "transit",
+        "phone": "",
+        "website": "https://kingcounty.gov/metro",
         "source": "KC Metro",
-        "wheelchair_accessible": True, "has_baby_changing": False,
+        "wheelchair_accessible": True,
+        "has_baby_changing": False,
     }
     entries = [
-        ("U-District Station Transit Shelter", 47.6614, -122.3131, "4700 University Way NE, Seattle, WA 98105", "Metro transit shelter at U-District Station. Major transfer point."),
-        ("Capitol Hill Station Transit Shelter", 47.6195, -122.3208, "1424 Broadway, Seattle, WA 98122", "Metro transit shelter at Capitol Hill Station."),
-        ("Westlake Station Transit Shelter", 47.6113, -122.3370, "400 Pine St, Seattle, WA 98101", "Metro transit hub at Westlake Station. Major transfer point."),
-        ("Pioneer Square Station Transit Shelter", 47.6021, -122.3314, "3rd Ave & James St, Seattle, WA 98104", "Metro transit shelter at Pioneer Square Station."),
-        ("International District Station Transit Shelter", 47.5982, -122.3279, "5th Ave S & S Jackson St, Seattle, WA 98104", "Metro transit shelter at International District Station."),
-        ("Columbia City Station Transit Shelter", 47.5601, -122.2870, "4800 Rainier Ave S, Seattle, WA 98118", "Metro transit shelter at Columbia City Station."),
-        ("Northgate Station Transit Shelter", 47.7065, -122.3266, "10230 4th Ave NE, Seattle, WA 98125", "Metro transit hub at Northgate Station. Major transfer point."),
-        ("Bellevue Transit Center Shelter", 47.6159, -122.1960, "108th Ave NE & NE 6th St, Bellevue, WA 98004", "Metro transit shelter at Bellevue Transit Center."),
-        ("Tacoma Dome Station Transit Shelter", 47.2392, -122.4282, "610 Puyallup Ave, Tacoma, WA 98421", "Metro transit shelter at Tacoma Dome Station. Sounder & bus transfer."),
-        ("Tukwila International Blvd Station Transit Shelter", 47.4649, -122.2882, "18000 International Blvd, Tukwila, WA 98188", "Metro transit shelter at Tukwila Station."),
-        ("Rainier Beach Station Transit Shelter", 47.5222, -122.2691, "8702 Rainier Ave S, Seattle, WA 98118", "Metro transit shelter at Rainier Beach Station."),
-        ("Burien Transit Center Shelter", 47.4710, -122.3430, "14900 4th Ave SW, Burien, WA 98166", "Metro transit shelter at Burien Transit Center."),
-        ("Auburn Station Transit Shelter", 47.3072, -122.2284, "23 A St SW, Auburn, WA 98001", "Metro transit shelter at Auburn Station."),
-        ("Federal Way Transit Center Shelter", 47.3183, -122.3030, "31507 Pete von Reichbauer Way S, Federal Way, WA 98003", "Metro transit shelter at Federal Way Transit Center."),
-        ("Kent Station Transit Shelter", 47.3847, -122.2345, "321 1st Ave N, Kent, WA 98032", "Metro transit shelter at Kent Station."),
+        (
+            "U-District Station Transit Shelter",
+            47.6614,
+            -122.3131,
+            "4700 University Way NE, Seattle, WA 98105",
+            "Metro transit shelter at U-District Station. Major transfer point.",
+        ),
+        (
+            "Capitol Hill Station Transit Shelter",
+            47.6195,
+            -122.3208,
+            "1424 Broadway, Seattle, WA 98122",
+            "Metro transit shelter at Capitol Hill Station.",
+        ),
+        (
+            "Westlake Station Transit Shelter",
+            47.6113,
+            -122.3370,
+            "400 Pine St, Seattle, WA 98101",
+            "Metro transit hub at Westlake Station. Major transfer point.",
+        ),
+        (
+            "Pioneer Square Station Transit Shelter",
+            47.6021,
+            -122.3314,
+            "3rd Ave & James St, Seattle, WA 98104",
+            "Metro transit shelter at Pioneer Square Station.",
+        ),
+        (
+            "International District Station Transit Shelter",
+            47.5982,
+            -122.3279,
+            "5th Ave S & S Jackson St, Seattle, WA 98104",
+            "Metro transit shelter at International District Station.",
+        ),
+        (
+            "Columbia City Station Transit Shelter",
+            47.5601,
+            -122.2870,
+            "4800 Rainier Ave S, Seattle, WA 98118",
+            "Metro transit shelter at Columbia City Station.",
+        ),
+        (
+            "Northgate Station Transit Shelter",
+            47.7065,
+            -122.3266,
+            "10230 4th Ave NE, Seattle, WA 98125",
+            "Metro transit hub at Northgate Station. Major transfer point.",
+        ),
+        (
+            "Bellevue Transit Center Shelter",
+            47.6159,
+            -122.1960,
+            "108th Ave NE & NE 6th St, Bellevue, WA 98004",
+            "Metro transit shelter at Bellevue Transit Center.",
+        ),
+        (
+            "Tacoma Dome Station Transit Shelter",
+            47.2392,
+            -122.4282,
+            "610 Puyallup Ave, Tacoma, WA 98421",
+            "Metro transit shelter at Tacoma Dome Station. Sounder & bus transfer.",
+        ),
+        (
+            "Tukwila International Blvd Station Transit Shelter",
+            47.4649,
+            -122.2882,
+            "18000 International Blvd, Tukwila, WA 98188",
+            "Metro transit shelter at Tukwila Station.",
+        ),
+        (
+            "Rainier Beach Station Transit Shelter",
+            47.5222,
+            -122.2691,
+            "8702 Rainier Ave S, Seattle, WA 98118",
+            "Metro transit shelter at Rainier Beach Station.",
+        ),
+        (
+            "Burien Transit Center Shelter",
+            47.4710,
+            -122.3430,
+            "14900 4th Ave SW, Burien, WA 98166",
+            "Metro transit shelter at Burien Transit Center.",
+        ),
+        (
+            "Auburn Station Transit Shelter",
+            47.3072,
+            -122.2284,
+            "23 A St SW, Auburn, WA 98001",
+            "Metro transit shelter at Auburn Station.",
+        ),
+        (
+            "Federal Way Transit Center Shelter",
+            47.3183,
+            -122.3030,
+            "31507 Pete von Reichbauer Way S, Federal Way, WA 98003",
+            "Metro transit shelter at Federal Way Transit Center.",
+        ),
+        (
+            "Kent Station Transit Shelter",
+            47.3847,
+            -122.2345,
+            "321 1st Ave N, Kent, WA 98032",
+            "Metro transit shelter at Kent Station.",
+        ),
     ]
     result = []
     for name, lat, lon, addr, desc in entries:
         item = dict(base)
-        item.update({"name": name, "latitude": lat, "longitude": lon, "address": addr, "description": desc})
+        item.update(
+            {
+                "name": name,
+                "latitude": lat,
+                "longitude": lon,
+                "address": addr,
+                "description": desc,
+            }
+        )
         result.append(item)
     return result
 
@@ -1202,6 +1851,7 @@ def _get_curated_transit():
 # ---------------------------------------------------------------------------
 # WA211 Food Banks & Free Meals
 # ---------------------------------------------------------------------------
+
 
 def fetch_wa211_food():
     # type: () -> List[Dict]
@@ -1221,8 +1871,8 @@ def fetch_wa211_food():
     seen_coords = set()  # type: set
 
     taxonomy_codes = [
-        ("BD-1800.2000", "food_pantry"),       # Food Pantries / Food Banks
-        ("BD-5000.8300", "community_meal"),     # Free Meals / Soup Kitchens
+        ("BD-1800.2000", "food_pantry"),  # Food Pantries / Food Banks
+        ("BD-5000.8300", "community_meal"),  # Free Meals / Soup Kitchens
     ]
 
     # Regex to clean service name: remove "offered by/at ..." suffix
@@ -1245,7 +1895,9 @@ def fetch_wa211_food():
                     try:
                         resp = client.get(url, params=params)
                         if resp.status_code != 200:
-                            print(f"  WA211 returned {resp.status_code} for {taxonomy} page {page}")
+                            print(
+                                f"  WA211 returned {resp.status_code} for {taxonomy} page {page}"
+                            )
                             break
 
                         # Extract __NEXT_DATA__ JSON from the HTML
@@ -1290,7 +1942,11 @@ def fetch_wa211_food():
                                 continue
                             seen_coords.add(coord_key)
 
-                            raw_name = entry.get("serviceName") or entry.get("name") or "Food Resource"
+                            raw_name = (
+                                entry.get("serviceName")
+                                or entry.get("name")
+                                or "Food Resource"
+                            )
                             name = name_clean_re.sub("", raw_name).strip()
                             if not name:
                                 name = raw_name.strip()
@@ -1300,18 +1956,22 @@ def fetch_wa211_food():
                             phone = (entry.get("phone") or "").strip()
                             website = (entry.get("website") or "").strip()
 
-                            facilities.append({
-                                "name": name[:255],
-                                "category": "free_food",
-                                "subcategory": subcategory,
-                                "latitude": lat,
-                                "longitude": lon,
-                                "description": summary[:500] if summary else "Free food resource",
-                                "address": address,
-                                "phone": phone,
-                                "website": website,
-                                "source": "WA211",
-                            })
+                            facilities.append(
+                                {
+                                    "name": name[:255],
+                                    "category": "free_food",
+                                    "subcategory": subcategory,
+                                    "latitude": lat,
+                                    "longitude": lon,
+                                    "description": summary[:500]
+                                    if summary
+                                    else "Free food resource",
+                                    "address": address,
+                                    "phone": phone,
+                                    "website": website,
+                                    "source": "WA211",
+                                }
+                            )
                             page_count += 1
 
                         page += 1
@@ -1324,7 +1984,9 @@ def fetch_wa211_food():
                         print(f"  WA211 fetch error on {taxonomy} page {page}: {e}")
                         break
 
-                print(f"  {taxonomy} ({subcategory}): {page_count} entries across {page - 1} pages")
+                print(
+                    f"  {taxonomy} ({subcategory}): {page_count} entries across {page - 1} pages"
+                )
 
     except Exception as e:
         print(f"  WA211 fetch error: {e}")
@@ -1336,6 +1998,7 @@ def fetch_wa211_food():
 # ---------------------------------------------------------------------------
 # WA211 Homeless Shelters
 # ---------------------------------------------------------------------------
+
 
 def fetch_wa211_shelters():
     # type: () -> List[Dict]
@@ -1385,7 +2048,9 @@ def fetch_wa211_shelters():
                     try:
                         resp = client.get(url, params=params)
                         if resp.status_code != 200:
-                            print(f"  WA211 returned {resp.status_code} for {taxonomy} page {page}")
+                            print(
+                                f"  WA211 returned {resp.status_code} for {taxonomy} page {page}"
+                            )
                             break
 
                         # Extract __NEXT_DATA__ JSON from the HTML
@@ -1429,7 +2094,11 @@ def fetch_wa211_shelters():
                                 continue
                             seen_coords.add(coord_key)
 
-                            raw_name = entry.get("serviceName") or entry.get("name") or "Homeless Shelter"
+                            raw_name = (
+                                entry.get("serviceName")
+                                or entry.get("name")
+                                or "Homeless Shelter"
+                            )
                             name = name_clean_re.sub("", raw_name).strip()
                             if not name:
                                 name = raw_name.strip()
@@ -1439,18 +2108,22 @@ def fetch_wa211_shelters():
                             phone = (entry.get("phone") or "").strip()
                             website = (entry.get("website") or "").strip()
 
-                            facilities.append({
-                                "name": name[:255],
-                                "category": "shelter",
-                                "subcategory": subcategory,
-                                "latitude": lat,
-                                "longitude": lon,
-                                "description": summary[:500] if summary else "Homeless shelter resource",
-                                "address": address,
-                                "phone": phone,
-                                "website": website,
-                                "source": "WA211",
-                            })
+                            facilities.append(
+                                {
+                                    "name": name[:255],
+                                    "category": "shelter",
+                                    "subcategory": subcategory,
+                                    "latitude": lat,
+                                    "longitude": lon,
+                                    "description": summary[:500]
+                                    if summary
+                                    else "Homeless shelter resource",
+                                    "address": address,
+                                    "phone": phone,
+                                    "website": website,
+                                    "source": "WA211",
+                                }
+                            )
                             page_count += 1
 
                         page += 1
@@ -1463,7 +2136,9 @@ def fetch_wa211_shelters():
                         print(f"  WA211 fetch error on {taxonomy} page {page}: {e}")
                         break
 
-                print(f"  {taxonomy} ({subcategory}): {page_count} entries across {page - 1} pages")
+                print(
+                    f"  {taxonomy} ({subcategory}): {page_count} entries across {page - 1} pages"
+                )
 
     except Exception as e:
         print(f"  WA211 shelters fetch error: {e}")
@@ -1472,7 +2147,10 @@ def fetch_wa211_shelters():
     curated = _get_curated_shelters()
     curated_added = 0
     for entry in curated:
-        coord_key = (round(entry["latitude"] * 10000), round(entry["longitude"] * 10000))
+        coord_key = (
+            round(entry["latitude"] * 10000),
+            round(entry["longitude"] * 10000),
+        )
         if coord_key not in seen_coords:
             seen_coords.add(coord_key)
             facilities.append(entry)
@@ -1500,100 +2178,252 @@ def _get_curated_shelters():
     }
     entries = [
         # Seattle
-        ("Compass Center Day Shelter", "emergency_shelter", 47.6062, -122.3381,
-         "2015 3rd Ave, Seattle, WA 98121", "(206) 474-0186",
-         "Day shelter providing meals, case management, and housing referrals."),
-        ("Bread of Life Mission", "emergency_shelter", 47.5984, -122.3281,
-         "97 S Main St, Seattle, WA 98104", "(206) 682-3579",
-         "Emergency overnight shelter and meals for men. Faith-based mission."),
-        ("Seattle's Union Gospel Mission", "emergency_shelter", 47.5983, -122.3332,
-         "318 2nd Ave Extension S, Seattle, WA 98104", "(206) 622-5177",
-         "Emergency shelter, meals, and recovery programs for men and families."),
-        ("Sacred Heart Shelter", "emergency_shelter", 47.6062, -122.3321,
-         "232 Warren Ave N, Seattle, WA 98109", "(206) 285-7489",
-         "Emergency shelter for single adults operated by Catholic Community Services."),
-        ("Salvation Army Women's Shelter", "domestic_violence", 47.6033, -122.3336,
-         "1101 Pike St, Seattle, WA 98101", "(206) 447-9944",
-         "Emergency shelter for women and families. Salvation Army operated."),
-        ("Noel House Women's Referral Center", "emergency_shelter", 47.6115, -122.3370,
-         "118 Bell St, Seattle, WA 98121", "(206) 441-3210",
-         "Referral center and shelter for single women in downtown Seattle."),
-        ("Mary's Place Family Shelter", "homeless_shelter", 47.6245, -122.3555,
-         "1830 9th Ave W, Seattle, WA 98119", "(206) 621-8474",
-         "Family shelter providing safe overnight accommodations and services for families with children."),
-        ("DESC Emergency Shelter", "emergency_shelter", 47.6013, -122.3316,
-         "515 3rd Ave, Seattle, WA 98104", "(206) 464-1570",
-         "Emergency shelter and supportive services for chronically homeless adults."),
-        ("YouthCare Orion Center", "homeless_shelter", 47.6138, -122.3375,
-         "1828 Yale Ave, Seattle, WA 98101", "(206) 694-4500",
-         "Drop-in center and shelter for homeless youth ages 12-24."),
+        (
+            "Compass Center Day Shelter",
+            "emergency_shelter",
+            47.6062,
+            -122.3381,
+            "2015 3rd Ave, Seattle, WA 98121",
+            "(206) 474-0186",
+            "Day shelter providing meals, case management, and housing referrals.",
+        ),
+        (
+            "Bread of Life Mission",
+            "emergency_shelter",
+            47.5984,
+            -122.3281,
+            "97 S Main St, Seattle, WA 98104",
+            "(206) 682-3579",
+            "Emergency overnight shelter and meals for men. Faith-based mission.",
+        ),
+        (
+            "Seattle's Union Gospel Mission",
+            "emergency_shelter",
+            47.5983,
+            -122.3332,
+            "318 2nd Ave Extension S, Seattle, WA 98104",
+            "(206) 622-5177",
+            "Emergency shelter, meals, and recovery programs for men and families.",
+        ),
+        (
+            "Sacred Heart Shelter",
+            "emergency_shelter",
+            47.6062,
+            -122.3321,
+            "232 Warren Ave N, Seattle, WA 98109",
+            "(206) 285-7489",
+            "Emergency shelter for single adults operated by Catholic Community Services.",
+        ),
+        (
+            "Salvation Army Women's Shelter",
+            "domestic_violence",
+            47.6033,
+            -122.3336,
+            "1101 Pike St, Seattle, WA 98101",
+            "(206) 447-9944",
+            "Emergency shelter for women and families. Salvation Army operated.",
+        ),
+        (
+            "Noel House Women's Referral Center",
+            "emergency_shelter",
+            47.6115,
+            -122.3370,
+            "118 Bell St, Seattle, WA 98121",
+            "(206) 441-3210",
+            "Referral center and shelter for single women in downtown Seattle.",
+        ),
+        (
+            "Mary's Place Family Shelter",
+            "homeless_shelter",
+            47.6245,
+            -122.3555,
+            "1830 9th Ave W, Seattle, WA 98119",
+            "(206) 621-8474",
+            "Family shelter providing safe overnight accommodations and services for families with children.",
+        ),
+        (
+            "DESC Emergency Shelter",
+            "emergency_shelter",
+            47.6013,
+            -122.3316,
+            "515 3rd Ave, Seattle, WA 98104",
+            "(206) 464-1570",
+            "Emergency shelter and supportive services for chronically homeless adults.",
+        ),
+        (
+            "YouthCare Orion Center",
+            "homeless_shelter",
+            47.6138,
+            -122.3375,
+            "1828 Yale Ave, Seattle, WA 98101",
+            "(206) 694-4500",
+            "Drop-in center and shelter for homeless youth ages 12-24.",
+        ),
         # Spokane
-        ("Union Gospel Mission - Spokane", "emergency_shelter", 47.6544, -117.4170,
-         "1224 E Trent Ave, Spokane, WA 99202", "(509) 535-8510",
-         "Emergency shelter, meals, and recovery programs in Spokane."),
-        ("Spokane Salvation Army Shelter", "emergency_shelter", 47.6561, -117.4119,
-         "222 E Indiana Ave, Spokane, WA 99207", "(509) 325-6810",
-         "Emergency shelter and social services for individuals and families."),
-        ("Hope House Spokane", "transitional_housing", 47.6602, -117.4253,
-         "4005 N Cook St, Spokane, WA 99207", "(509) 325-4310",
-         "Transitional housing and support services for homeless women and children."),
-        ("House of Charity Spokane", "emergency_shelter", 47.6583, -117.4097,
-         "32 W Pacific Ave, Spokane, WA 99201", "(509) 624-7821",
-         "Emergency shelter providing beds, meals, and case management."),
-        ("Crosswalk Spokane Youth Shelter", "homeless_shelter", 47.6508, -117.4265,
-         "525 W 2nd Ave, Spokane, WA 99201", "(509) 624-2378",
-         "Emergency shelter and services for homeless youth in Spokane."),
-        ("VOA Crosswalk Shelter", "homeless_shelter", 47.6542, -117.4235,
-         "525 W 2nd Ave, Spokane, WA 99201", "(509) 536-1050",
-         "Youth emergency shelter operated by Volunteers of America."),
-        ("Family Promise of Spokane", "homeless_shelter", 47.6570, -117.4120,
-         "904 E Hartson Ave, Spokane, WA 99202", "(509) 747-5487",
-         "Temporary shelter and support for homeless families with children."),
+        (
+            "Union Gospel Mission - Spokane",
+            "emergency_shelter",
+            47.6544,
+            -117.4170,
+            "1224 E Trent Ave, Spokane, WA 99202",
+            "(509) 535-8510",
+            "Emergency shelter, meals, and recovery programs in Spokane.",
+        ),
+        (
+            "Spokane Salvation Army Shelter",
+            "emergency_shelter",
+            47.6561,
+            -117.4119,
+            "222 E Indiana Ave, Spokane, WA 99207",
+            "(509) 325-6810",
+            "Emergency shelter and social services for individuals and families.",
+        ),
+        (
+            "Hope House Spokane",
+            "transitional_housing",
+            47.6602,
+            -117.4253,
+            "4005 N Cook St, Spokane, WA 99207",
+            "(509) 325-4310",
+            "Transitional housing and support services for homeless women and children.",
+        ),
+        (
+            "House of Charity Spokane",
+            "emergency_shelter",
+            47.6583,
+            -117.4097,
+            "32 W Pacific Ave, Spokane, WA 99201",
+            "(509) 624-7821",
+            "Emergency shelter providing beds, meals, and case management.",
+        ),
+        (
+            "Crosswalk Spokane Youth Shelter",
+            "homeless_shelter",
+            47.6508,
+            -117.4265,
+            "525 W 2nd Ave, Spokane, WA 99201",
+            "(509) 624-2378",
+            "Emergency shelter and services for homeless youth in Spokane.",
+        ),
+        (
+            "VOA Crosswalk Shelter",
+            "homeless_shelter",
+            47.6542,
+            -117.4235,
+            "525 W 2nd Ave, Spokane, WA 99201",
+            "(509) 536-1050",
+            "Youth emergency shelter operated by Volunteers of America.",
+        ),
+        (
+            "Family Promise of Spokane",
+            "homeless_shelter",
+            47.6570,
+            -117.4120,
+            "904 E Hartson Ave, Spokane, WA 99202",
+            "(509) 747-5487",
+            "Temporary shelter and support for homeless families with children.",
+        ),
         # Tacoma
-        ("Tacoma Rescue Mission", "emergency_shelter", 47.2509, -122.4391,
-         "425 S Tacoma Way, Tacoma, WA 98402", "(253) 383-4493",
-         "Emergency shelter and meals for men, women, and families in Tacoma."),
-        ("Nativity House Tacoma", "emergency_shelter", 47.2538, -122.4425,
-         "702 S 14th St, Tacoma, WA 98405", "(253) 502-2786",
-         "Emergency shelter providing day and night services for homeless adults."),
-        ("Catholic Community Services Tacoma", "emergency_shelter", 47.2543, -122.4400,
-         "1323 S Yakima Ave, Tacoma, WA 98405", "(253) 502-2600",
-         "Emergency shelter and social services for individuals and families in Tacoma."),
+        (
+            "Tacoma Rescue Mission",
+            "emergency_shelter",
+            47.2509,
+            -122.4391,
+            "425 S Tacoma Way, Tacoma, WA 98402",
+            "(253) 383-4493",
+            "Emergency shelter and meals for men, women, and families in Tacoma.",
+        ),
+        (
+            "Nativity House Tacoma",
+            "emergency_shelter",
+            47.2538,
+            -122.4425,
+            "702 S 14th St, Tacoma, WA 98405",
+            "(253) 502-2786",
+            "Emergency shelter providing day and night services for homeless adults.",
+        ),
+        (
+            "Catholic Community Services Tacoma",
+            "emergency_shelter",
+            47.2543,
+            -122.4400,
+            "1323 S Yakima Ave, Tacoma, WA 98405",
+            "(253) 502-2600",
+            "Emergency shelter and social services for individuals and families in Tacoma.",
+        ),
         # Olympia
-        ("Interfaith Works Emergency Overnight Shelter", "emergency_shelter", 47.0425, -122.8975,
-         "602 State Ave NE, Olympia, WA 98501", "(360) 357-7224",
-         "Emergency overnight shelter in Olympia for single adults."),
-        ("Family Support Center of South Sound", "homeless_shelter", 47.0379, -122.9007,
-         "201 Capitol Way N, Olympia, WA 98501", "(360) 754-9297",
-         "Shelter and services for homeless families in the Olympia area."),
+        (
+            "Interfaith Works Emergency Overnight Shelter",
+            "emergency_shelter",
+            47.0425,
+            -122.8975,
+            "602 State Ave NE, Olympia, WA 98501",
+            "(360) 357-7224",
+            "Emergency overnight shelter in Olympia for single adults.",
+        ),
+        (
+            "Family Support Center of South Sound",
+            "homeless_shelter",
+            47.0379,
+            -122.9007,
+            "201 Capitol Way N, Olympia, WA 98501",
+            "(360) 754-9297",
+            "Shelter and services for homeless families in the Olympia area.",
+        ),
         # Bellingham
-        ("Lighthouse Mission Ministries", "emergency_shelter", 48.7519, -122.4787,
-         "910 W Holly St, Bellingham, WA 98225", "(360) 733-5120",
-         "Emergency shelter, meals, and recovery programs in Bellingham."),
-        ("Whatcom County Cold Weather Shelter", "warming_center", 48.7550, -122.4750,
-         "Bellingham, WA 98225", "(360) 733-5120",
-         "Seasonal cold weather shelter activated during freezing temperatures."),
+        (
+            "Lighthouse Mission Ministries",
+            "emergency_shelter",
+            48.7519,
+            -122.4787,
+            "910 W Holly St, Bellingham, WA 98225",
+            "(360) 733-5120",
+            "Emergency shelter, meals, and recovery programs in Bellingham.",
+        ),
+        (
+            "Whatcom County Cold Weather Shelter",
+            "warming_center",
+            48.7550,
+            -122.4750,
+            "Bellingham, WA 98225",
+            "(360) 733-5120",
+            "Seasonal cold weather shelter activated during freezing temperatures.",
+        ),
         # Vancouver
-        ("Share House Shelter", "emergency_shelter", 45.6280, -122.6740,
-         "2306 NE Andresen Rd, Vancouver, WA 98661", "(360) 448-2121",
-         "Emergency shelter for men, women, and families in Vancouver, WA."),
-        ("Lincoln Place Shelter", "transitional_housing", 45.6300, -122.6712,
-         "711 W 13th St, Vancouver, WA 98660", "(360) 993-9556",
-         "Transitional shelter and housing support in Vancouver, WA."),
+        (
+            "Share House Shelter",
+            "emergency_shelter",
+            45.6280,
+            -122.6740,
+            "2306 NE Andresen Rd, Vancouver, WA 98661",
+            "(360) 448-2121",
+            "Emergency shelter for men, women, and families in Vancouver, WA.",
+        ),
+        (
+            "Lincoln Place Shelter",
+            "transitional_housing",
+            45.6300,
+            -122.6712,
+            "711 W 13th St, Vancouver, WA 98660",
+            "(360) 993-9556",
+            "Transitional shelter and housing support in Vancouver, WA.",
+        ),
     ]
     result = []
     for name, subcat, lat, lon, addr, phone, desc in entries:
         item = dict(base)
-        item.update({
-            "name": name,
-            "subcategory": subcat,
-            "latitude": lat,
-            "longitude": lon,
-            "address": addr,
-            "phone": phone,
-            "website": "",
-            "description": desc,
-        })
+        item.update(
+            {
+                "name": name,
+                "subcategory": subcat,
+                "latitude": lat,
+                "longitude": lon,
+                "address": addr,
+                "phone": phone,
+                "website": "",
+                "description": desc,
+            }
+        )
         result.append(item)
     return result
 
@@ -1601,6 +2431,7 @@ def _get_curated_shelters():
 # ---------------------------------------------------------------------------
 # Helpers
 # ---------------------------------------------------------------------------
+
 
 def _safe_float(val):
     """Safely convert a value to float, returning None on failure."""
@@ -1655,6 +2486,7 @@ def _usda_subcategory(agency):
 # ---------------------------------------------------------------------------
 # Database operations
 # ---------------------------------------------------------------------------
+
 
 def clear_all(db):
     # type: (Session) -> None
@@ -1767,9 +2599,14 @@ ALL_SOURCES = list(SOURCE_FETCHERS.keys())
 # Main
 # ---------------------------------------------------------------------------
 
+
 def main():
     parser = argparse.ArgumentParser(description="Seed WA facilities into UrbanAid DB")
-    parser.add_argument("--clear", action="store_true", help="Clear all existing utilities before seeding")
+    parser.add_argument(
+        "--clear",
+        action="store_true",
+        help="Clear all existing utilities before seeding",
+    )
     parser.add_argument(
         "--source",
         choices=["all"] + ALL_SOURCES,
@@ -1817,7 +2654,10 @@ def main():
             total_inserted += inserted
             total_skipped += skipped
         print("  " + "-" * 58)
-        print("  %-30s %8d %8d %8d" % ("TOTAL", total_fetched, total_inserted, total_skipped))
+        print(
+            "  %-30s %8d %8d %8d"
+            % ("TOTAL", total_fetched, total_inserted, total_skipped)
+        )
         print("=" * 62)
 
         # Show total active count in DB

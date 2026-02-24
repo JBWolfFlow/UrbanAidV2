@@ -24,7 +24,6 @@ __all__ = [
     "get_db",
     "init_db",
     "DATABASE_URL",
-
     # Models
     "User",
     "UserRole",

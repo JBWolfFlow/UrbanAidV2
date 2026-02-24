@@ -9,36 +9,36 @@ Security Features:
 - Rate limiting protection
 - Credentials in request body (not query params)
 """
+
 import os
 import logging
 import time as _time
 import httpx as _httpx
 
 from utils.logging_config import setup_logging
+
 setup_logging()
 
 logger = logging.getLogger(__name__)
 from fastapi import FastAPI, HTTPException, Depends, Query, status, Body
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
+from fastapi.security import HTTPBearer
 from sqlalchemy.orm import Session
-from typing import List, Optional
+from typing import Optional
 import uvicorn
 from contextlib import asynccontextmanager
 
 from models.database import get_db, init_db
 from models.utility import Utility as UtilityModel
-from models.user import User as UserModel
-from models.rating import Rating as RatingModel
-from schemas.utility import (
-    UtilityCreate,
-    UtilityResponse,
-    UtilityUpdate,
-    UtilityFilter
-)
+from schemas.utility import UtilityCreate, UtilityResponse, UtilityUpdate, UtilityFilter
 from schemas.user import (
-    UserCreate, UserResponse, UserLogin, TokenResponse,
-    PasswordChange, RefreshTokenRequest, MessageResponse
+    UserCreate,
+    UserResponse,
+    UserLogin,
+    TokenResponse,
+    PasswordChange,
+    RefreshTokenRequest,
+    MessageResponse,
 )
 from schemas.rating import RatingCreate, RatingResponse
 from controllers.utility_controller import utility_controller
@@ -50,14 +50,19 @@ from services.hrsa_service import HRSAService
 from services.va_service import VAService
 from services.usda_service import USDAService
 from utils.auth import (
-    get_current_user, get_current_user_optional,
-    get_current_active_user, require_admin, require_moderator,
-    TokenData, decode_token
+    get_current_user,
+    get_current_user_optional,
+    require_moderator,
+    TokenData,
+    decode_token,
 )
 from utils.exceptions import (
-    UtilityNotFoundError, UnauthorizedError, UserAlreadyExistsError,
-    InvalidCredentialsError, InactiveUserError, UserNotFoundError,
-    UrbanAidException
+    UtilityNotFoundError,
+    UnauthorizedError,
+    UserAlreadyExistsError,
+    InvalidCredentialsError,
+    InactiveUserError,
+    UrbanAidException,
 )
 from middleware.security import SecurityHeadersMiddleware, get_cors_origins
 from middleware.rate_limit import RateLimitMiddleware
@@ -76,6 +81,7 @@ async def lifespan(app: FastAPI):
     init_db()
     # Log utility count on startup for visibility
     from models.database import SessionLocal
+
     db = SessionLocal()
     try:
         count = db.query(UtilityModel).count()
@@ -92,8 +98,10 @@ app = FastAPI(
     description="API for discovering public utilities",
     version="2.0.0",
     lifespan=lifespan,
-    docs_url="/docs" if ENVIRONMENT != "production" else None,  # Disable docs in production
-    redoc_url="/redoc" if ENVIRONMENT != "production" else None
+    docs_url="/docs"
+    if ENVIRONMENT != "production"
+    else None,  # Disable docs in production
+    redoc_url="/redoc" if ENVIRONMENT != "production" else None,
 )
 
 # ========== MIDDLEWARE (order matters - last added = first executed) ==========
@@ -105,14 +113,11 @@ app.add_middleware(
     default_limit=100,
     anonymous_limit=20,
     login_limit=5,
-    write_limit=10
+    write_limit=10,
 )
 
 # 2. Security Headers (applied to all responses)
-app.add_middleware(
-    SecurityHeadersMiddleware,
-    enable_hsts=(ENVIRONMENT == "production")
-)
+app.add_middleware(SecurityHeadersMiddleware, enable_hsts=(ENVIRONMENT == "production"))
 
 # 3. CORS (must be added last to be processed first)
 # SECURITY FIX: No longer using wildcard origins
@@ -122,8 +127,14 @@ app.add_middleware(
     allow_origins=ALLOWED_ORIGINS,
     allow_credentials=True,
     allow_methods=["GET", "POST", "PUT", "DELETE", "PATCH", "OPTIONS"],
-    allow_headers=["Authorization", "Content-Type", "Accept", "Origin", "X-Requested-With"],
-    expose_headers=["X-RateLimit-Limit", "X-RateLimit-Remaining", "X-RateLimit-Reset"]
+    allow_headers=[
+        "Authorization",
+        "Content-Type",
+        "Accept",
+        "Origin",
+        "X-Requested-With",
+    ],
+    expose_headers=["X-RateLimit-Limit", "X-RateLimit-Remaining", "X-RateLimit-Reset"],
 )
 
 # Initialize services
@@ -136,6 +147,7 @@ usda_service = USDAService()
 
 # ========== EXCEPTION HANDLERS ==========
 
+
 @app.exception_handler(UrbanAidException)
 async def urbanaid_exception_handler(request, exc: UrbanAidException):
     """Handle all UrbanAid custom exceptions"""
@@ -144,6 +156,7 @@ async def urbanaid_exception_handler(request, exc: UrbanAidException):
 
 # ========== HEALTH CHECK ==========
 
+
 @app.get("/health", tags=["Health"])
 async def health_check():
     """Health check endpoint"""
@@ -151,7 +164,7 @@ async def health_check():
         "status": "healthy",
         "message": "UrbanAid API is running",
         "version": "2.0.0",
-        "environment": ENVIRONMENT
+        "environment": ENVIRONMENT,
     }
 
 
@@ -159,10 +172,13 @@ async def health_check():
 async def data_health(db: Session = Depends(get_db)):
     """Report utility counts by category for data completeness verification."""
     from sqlalchemy import func
-    counts = db.query(
-        UtilityModel.category,
-        func.count(UtilityModel.id)
-    ).filter(UtilityModel.is_active == True).group_by(UtilityModel.category).all()
+
+    counts = (
+        db.query(UtilityModel.category, func.count(UtilityModel.id))
+        .filter(UtilityModel.is_active == True)
+        .group_by(UtilityModel.category)
+        .all()
+    )
 
     total = sum(c for _, c in counts)
     return {
@@ -175,9 +191,12 @@ async def data_health(db: Session = Depends(get_db)):
 
 ADMIN_SEED_KEY = os.getenv("ADMIN_SEED_KEY", "urbanaid-seed-2026")
 
+
 @app.post("/admin/seed", tags=["Admin"])
 async def admin_seed(
-    source: str = Query(default="all", description="Source to seed: all, food, shelters, etc."),
+    source: str = Query(
+        default="all", description="Source to seed: all, food, shelters, etc."
+    ),
     key: str = Query(..., description="Admin seed key"),
 ):
     """Trigger database seeding for specific sources."""
@@ -189,7 +208,9 @@ async def admin_seed(
 
     valid_sources = ["all"] + ALL_SOURCES
     if source not in valid_sources:
-        raise HTTPException(status_code=400, detail=f"Invalid source. Valid: {valid_sources}")
+        raise HTTPException(
+            status_code=400, detail=f"Invalid source. Valid: {valid_sources}"
+        )
 
     sources_to_run = ALL_SOURCES if source == "all" else [source]
 
@@ -201,7 +222,11 @@ async def admin_seed(
             data = fetcher()
             if data:
                 inserted, skipped = insert_facilities(db, data)
-                results[label] = {"fetched": len(data), "inserted": inserted, "skipped": skipped}
+                results[label] = {
+                    "fetched": len(data),
+                    "inserted": inserted,
+                    "skipped": skipped,
+                }
             else:
                 results[label] = {"fetched": 0, "inserted": 0, "skipped": 0}
 
@@ -214,11 +239,9 @@ async def admin_seed(
 
 # ========== AUTHENTICATION ENDPOINTS ==========
 
+
 @app.post("/auth/register", response_model=UserResponse, tags=["Authentication"])
-async def register_user(
-    user_data: UserCreate,
-    db: Session = Depends(get_db)
-):
+async def register_user(user_data: UserCreate, db: Session = Depends(get_db)):
     """
     Register a new user account.
 
@@ -232,19 +255,21 @@ async def register_user(
     try:
         user = user_controller.create_user(db, user_data)
         return user
-    except (UserAlreadyExistsError, ) as e:
+    except (UserAlreadyExistsError,) as e:
         raise HTTPException(status_code=e.status_code, detail=e.detail)
-    except Exception as e:
+    except Exception:
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail="An error occurred during registration"
+            detail="An error occurred during registration",
         )
 
 
 @app.post("/auth/login", response_model=TokenResponse, tags=["Authentication"])
 async def login_user(
-    credentials: UserLogin = Body(...),  # SECURITY FIX: Credentials in body, not query params
-    db: Session = Depends(get_db)
+    credentials: UserLogin = Body(
+        ...
+    ),  # SECURITY FIX: Credentials in body, not query params
+    db: Session = Depends(get_db),
 ):
     """
     Authenticate user and return JWT tokens.
@@ -254,24 +279,21 @@ async def login_user(
     """
     try:
         user, tokens = user_controller.authenticate_user(
-            db,
-            credentials.username,
-            credentials.password
+            db, credentials.username, credentials.password
         )
         return tokens
     except (InvalidCredentialsError, InactiveUserError) as e:
         raise HTTPException(status_code=e.status_code, detail=e.detail)
-    except Exception as e:
+    except Exception:
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail="An error occurred during login"
+            detail="An error occurred during login",
         )
 
 
 @app.post("/auth/refresh", response_model=TokenResponse, tags=["Authentication"])
 async def refresh_tokens(
-    request: RefreshTokenRequest = Body(...),
-    db: Session = Depends(get_db)
+    request: RefreshTokenRequest = Body(...), db: Session = Depends(get_db)
 ):
     """
     Refresh access token using a valid refresh token.
@@ -285,24 +307,21 @@ async def refresh_tokens(
             raise InvalidCredentialsError("Invalid refresh token")
 
         tokens = user_controller.refresh_tokens(
-            db,
-            token_data.user_id,
-            request.refresh_token
+            db, token_data.user_id, request.refresh_token
         )
         return tokens
     except (InvalidCredentialsError, InactiveUserError) as e:
         raise HTTPException(status_code=e.status_code, detail=e.detail)
-    except Exception as e:
+    except Exception:
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="Invalid or expired refresh token"
+            detail="Invalid or expired refresh token",
         )
 
 
 @app.post("/auth/logout", response_model=MessageResponse, tags=["Authentication"])
 async def logout_user(
-    current_user: TokenData = Depends(get_current_user),
-    db: Session = Depends(get_db)
+    current_user: TokenData = Depends(get_current_user), db: Session = Depends(get_db)
 ):
     """
     Log out the current user by invalidating their refresh token.
@@ -313,8 +332,7 @@ async def logout_user(
 
 @app.get("/auth/me", response_model=UserResponse, tags=["Authentication"])
 async def get_current_user_info(
-    current_user: TokenData = Depends(get_current_user),
-    db: Session = Depends(get_db)
+    current_user: TokenData = Depends(get_current_user), db: Session = Depends(get_db)
 ):
     """
     Get current authenticated user's information.
@@ -329,7 +347,7 @@ async def get_current_user_info(
 async def change_password(
     password_data: PasswordChange = Body(...),
     current_user: TokenData = Depends(get_current_user),
-    db: Session = Depends(get_db)
+    db: Session = Depends(get_db),
 ):
     """
     Change the current user's password.
@@ -349,13 +367,16 @@ async def change_password(
 # --- /utilities/all response cache (Redis or in-memory, 5-min TTL) ---
 _UTILITIES_CACHE_TTL = 300  # 5 minutes
 
+
 def _init_utilities_cache():
     """Create cache helpers for the /utilities/all endpoint."""
     import json as _json
+
     redis_url = os.getenv("REDIS_URL")
     if redis_url:
         try:
             import redis
+
             _redis = redis.from_url(redis_url, decode_responses=True)
             _redis.ping()
 
@@ -397,8 +418,7 @@ _util_cache_get, _util_cache_put, _util_cache_invalidate = _init_utilities_cache
 
 @app.get("/utilities/all", tags=["Utilities"])
 async def get_all_utilities(
-    category: Optional[str] = Query(None),
-    db: Session = Depends(get_db)
+    category: Optional[str] = Query(None), db: Session = Depends(get_db)
 ):
     """
     Return ALL active utilities (no radius/limit).
@@ -439,7 +459,7 @@ async def get_all_utilities(
     except Exception as e:
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"Error fetching all utilities: {str(e)}"
+            detail=f"Error fetching all utilities: {str(e)}",
         )
 
 
@@ -453,7 +473,7 @@ async def get_utilities(
     verified: Optional[bool] = Query(None),
     limit: int = Query(50, ge=1, le=10000),
     offset: int = Query(0, ge=0),
-    db: Session = Depends(get_db)
+    db: Session = Depends(get_db),
 ):
     """
     Find utilities near a location.
@@ -465,7 +485,7 @@ async def get_utilities(
         filters = UtilityFilter(
             category=category,
             wheelchair_accessible=wheelchair_accessible,
-            verified=verified
+            verified=verified,
         )
 
         results = await utility_controller.get_nearby_utilities(
@@ -475,7 +495,7 @@ async def get_utilities(
     except Exception as e:
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"Error fetching utilities: {str(e)}"
+            detail=f"Error fetching utilities: {str(e)}",
         )
 
 
@@ -483,7 +503,7 @@ async def get_utilities(
 async def create_utility(
     utility_data: UtilityCreate,
     db: Session = Depends(get_db),
-    current_user: Optional[TokenData] = Depends(get_current_user_optional)
+    current_user: Optional[TokenData] = Depends(get_current_user_optional),
 ):
     """
     Create a new utility.
@@ -499,15 +519,12 @@ async def create_utility(
     except Exception as e:
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"Error creating utility: {str(e)}"
+            detail=f"Error creating utility: {str(e)}",
         )
 
 
 @app.get("/utilities/{utility_id}", response_model=UtilityResponse, tags=["Utilities"])
-async def get_utility(
-    utility_id: str,
-    db: Session = Depends(get_db)
-):
+async def get_utility(utility_id: str, db: Session = Depends(get_db)):
     """
     Get details for a specific utility.
     """
@@ -526,7 +543,7 @@ async def update_utility(
     utility_id: str,
     utility_data: UtilityUpdate,
     db: Session = Depends(get_db),
-    current_user: TokenData = Depends(get_current_user)
+    current_user: TokenData = Depends(get_current_user),
 ):
     """
     Update an existing utility.
@@ -551,7 +568,7 @@ async def update_utility(
 async def delete_utility(
     utility_id: str,
     db: Session = Depends(get_db),
-    current_user: TokenData = Depends(get_current_user)
+    current_user: TokenData = Depends(get_current_user),
 ):
     """
     Delete a utility (soft delete).
@@ -574,6 +591,7 @@ async def delete_utility(
 
 # ========== SEARCH ENDPOINTS ==========
 
+
 @app.get("/search", tags=["Search"])
 async def search_utilities(
     query: str = Query(..., min_length=2, description="Search query"),
@@ -581,7 +599,7 @@ async def search_utilities(
     longitude: Optional[float] = Query(None, ge=-180, le=180),
     radius: float = Query(10.0, ge=0.1, le=50),
     limit: int = Query(20, ge=1, le=50),
-    db: Session = Depends(get_db)
+    db: Session = Depends(get_db),
 ):
     """
     Search utilities by name, description, or category.
@@ -596,18 +614,19 @@ async def search_utilities(
     except Exception as e:
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"Error searching utilities: {str(e)}"
+            detail=f"Error searching utilities: {str(e)}",
         )
 
 
 # ========== HRSA HEALTH CENTERS ENDPOINTS ==========
+
 
 @app.get("/health-centers", tags=["Health Centers"])
 async def get_nearby_health_centers(
     latitude: float = Query(..., ge=-90, le=90),
     longitude: float = Query(..., ge=-180, le=180),
     radius_km: float = Query(25.0, ge=1, le=100),
-    limit: int = Query(20, ge=1, le=50)
+    limit: int = Query(20, ge=1, le=50),
 ):
     """
     Find nearby HRSA Federally Qualified Health Centers (FQHCs).
@@ -620,25 +639,23 @@ async def get_nearby_health_centers(
             "status": "success",
             "data": health_centers,
             "count": len(health_centers),
-            "source": "HRSA - Health Resources & Services Administration"
+            "source": "HRSA - Health Resources & Services Administration",
         }
     except Exception as e:
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"Error fetching HRSA health centers: {str(e)}"
+            detail=f"Error fetching HRSA health centers: {str(e)}",
         )
 
 
 @app.get("/health-centers/state/{state_code}", tags=["Health Centers"])
 async def get_health_centers_by_state(
-    state_code: str,
-    limit: int = Query(100, ge=1, le=500)
+    state_code: str, limit: int = Query(100, ge=1, le=500)
 ):
     """Get all HRSA health centers in a specific state."""
     if len(state_code) != 2:
         raise HTTPException(
-            status_code=400,
-            detail="State code must be 2 characters (e.g., 'CA', 'NY')"
+            status_code=400, detail="State code must be 2 characters (e.g., 'CA', 'NY')"
         )
 
     try:
@@ -650,12 +667,11 @@ async def get_health_centers_by_state(
             "data": health_centers[:limit],
             "count": min(len(health_centers), limit),
             "total_available": len(health_centers),
-            "state": state_code.upper()
+            "state": state_code.upper(),
         }
     except Exception as e:
         raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=str(e)
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=str(e)
         )
 
 
@@ -679,13 +695,14 @@ async def get_health_center_details(center_id: str):
 
 # ========== VA MEDICAL FACILITIES ENDPOINTS ==========
 
+
 @app.get("/va-facilities", tags=["VA Facilities"])
 async def get_nearby_va_facilities(
     latitude: float = Query(..., ge=-90, le=90),
     longitude: float = Query(..., ge=-180, le=180),
     radius_miles: float = Query(50.0, ge=1, le=200),
     facility_type: str = Query("health"),
-    limit: int = Query(20, ge=1, le=50)
+    limit: int = Query(20, ge=1, le=50),
 ):
     """Find nearby VA (Veterans Affairs) medical facilities and services."""
     try:
@@ -696,7 +713,7 @@ async def get_nearby_va_facilities(
             "status": "success",
             "data": va_facilities,
             "count": len(va_facilities),
-            "source": "VA - Department of Veterans Affairs"
+            "source": "VA - Department of Veterans Affairs",
         }
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
@@ -706,7 +723,7 @@ async def get_nearby_va_facilities(
 async def get_va_facilities_by_state(
     state_code: str,
     facility_type: str = Query("health"),
-    limit: int = Query(200, ge=1, le=500)
+    limit: int = Query(200, ge=1, le=500),
 ):
     """Get all VA facilities in a specific state."""
     if len(state_code) != 2:
@@ -721,7 +738,7 @@ async def get_va_facilities_by_state(
             "data": va_facilities[:limit],
             "count": min(len(va_facilities), limit),
             "total_available": len(va_facilities),
-            "state": state_code.upper()
+            "state": state_code.upper(),
         }
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
@@ -747,17 +764,18 @@ async def get_va_facility_details(facility_id: str):
 
 # ========== USDA FACILITIES ENDPOINTS ==========
 
+
 @app.get("/usda-facilities", tags=["USDA Facilities"])
 async def get_nearby_usda_facilities(
     latitude: float = Query(..., ge=-90, le=90),
     longitude: float = Query(..., ge=-180, le=180),
     radius_km: float = Query(50.0, ge=1, le=200),
     facility_types: str = Query("rural_development,snap,fsa"),
-    limit: int = Query(20, ge=1, le=50)
+    limit: int = Query(20, ge=1, le=50),
 ):
     """Find nearby USDA facilities."""
     try:
-        types_list = [t.strip() for t in facility_types.split(',') if t.strip()]
+        types_list = [t.strip() for t in facility_types.split(",") if t.strip()]
         usda_facilities = await usda_service.search_nearby_usda_facilities(
             latitude, longitude, radius_km, types_list, limit
         )
@@ -765,7 +783,7 @@ async def get_nearby_usda_facilities(
             "status": "success",
             "data": usda_facilities,
             "count": len(usda_facilities),
-            "source": "USDA"
+            "source": "USDA",
         }
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
@@ -775,14 +793,14 @@ async def get_nearby_usda_facilities(
 async def get_usda_facilities_by_state(
     state_code: str,
     facility_types: str = Query("rural_development,snap,fsa"),
-    limit: int = Query(100, ge=1, le=500)
+    limit: int = Query(100, ge=1, le=500),
 ):
     """Get all USDA facilities in a specific state."""
     if len(state_code) != 2:
         raise HTTPException(status_code=400, detail="Invalid state code")
 
     try:
-        types_list = [t.strip() for t in facility_types.split(',') if t.strip()]
+        types_list = [t.strip() for t in facility_types.split(",") if t.strip()]
         usda_facilities = await usda_service.get_usda_facilities_by_state(
             state_code.upper(), types_list
         )
@@ -790,7 +808,7 @@ async def get_usda_facilities_by_state(
             "status": "success",
             "data": usda_facilities[:limit],
             "count": min(len(usda_facilities), limit),
-            "state": state_code.upper()
+            "state": state_code.upper(),
         }
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
@@ -816,12 +834,15 @@ async def get_usda_facility_details(facility_id: str):
 
 # ========== RATING ENDPOINTS ==========
 
-@app.post("/utilities/{utility_id}/ratings", response_model=RatingResponse, tags=["Ratings"])
+
+@app.post(
+    "/utilities/{utility_id}/ratings", response_model=RatingResponse, tags=["Ratings"]
+)
 async def create_rating(
     utility_id: str,
     rating_data: RatingCreate,
     db: Session = Depends(get_db),
-    current_user: TokenData = Depends(get_current_user)  # Require auth for ratings
+    current_user: TokenData = Depends(get_current_user),  # Require auth for ratings
 ):
     """
     Rate a utility (requires authentication).
@@ -844,16 +865,13 @@ async def get_utility_ratings(
     utility_id: str,
     limit: int = Query(20, ge=1, le=50),
     offset: int = Query(0, ge=0),
-    db: Session = Depends(get_db)
+    db: Session = Depends(get_db),
 ):
     """Get ratings for a specific utility."""
     try:
         ratings = rating_controller.get_utility_ratings(db, utility_id, limit, offset)
         stats = rating_controller.calculate_utility_rating_stats(db, utility_id)
-        return {
-            "ratings": ratings,
-            "statistics": stats
-        }
+        return {"ratings": ratings, "statistics": stats}
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
@@ -863,12 +881,15 @@ async def update_rating(
     rating_id: int,
     rating_data: RatingCreate,
     db: Session = Depends(get_db),
-    current_user: TokenData = Depends(get_current_user)
+    current_user: TokenData = Depends(get_current_user),
 ):
     """Update an existing rating (own ratings only)."""
     try:
         from schemas.rating import RatingUpdate
-        update_data = RatingUpdate(rating=rating_data.rating, comment=rating_data.comment)
+
+        update_data = RatingUpdate(
+            rating=rating_data.rating, comment=rating_data.comment
+        )
         rating = rating_controller.update_rating(
             db, rating_id, update_data, current_user.user_id
         )
@@ -881,7 +902,7 @@ async def update_rating(
 async def delete_rating(
     rating_id: int,
     db: Session = Depends(get_db),
-    current_user: TokenData = Depends(get_current_user)
+    current_user: TokenData = Depends(get_current_user),
 ):
     """Delete a rating (own ratings only, or admin)."""
     try:
@@ -894,13 +915,14 @@ async def delete_rating(
 
 # ========== REPORTING ENDPOINTS ==========
 
+
 @app.post("/utilities/{utility_id}/report", tags=["Reports"])
 async def report_utility(
     utility_id: str,
     reason: str = Query(..., description="Report reason"),
     description: str = Query("", description="Additional details"),
     db: Session = Depends(get_db),
-    current_user: Optional[TokenData] = Depends(get_current_user_optional)
+    current_user: Optional[TokenData] = Depends(get_current_user_optional),
 ):
     """Report a utility for issues (spam, closed, dangerous, etc.)."""
     try:
@@ -918,11 +940,12 @@ async def report_utility(
 
 # ========== ADMIN ENDPOINTS ==========
 
+
 @app.post("/admin/utilities/{utility_id}/verify", tags=["Admin"])
 async def verify_utility(
     utility_id: str,
     db: Session = Depends(get_db),
-    current_user: TokenData = Depends(require_moderator)
+    current_user: TokenData = Depends(require_moderator),
 ):
     """Verify a utility (moderator/admin only)."""
     try:
@@ -936,6 +959,7 @@ async def verify_utility(
 
 
 # ========== ANALYTICS ENDPOINTS ==========
+
 
 @app.get("/analytics/stats", tags=["Analytics"])
 async def get_app_statistics(db: Session = Depends(get_db)):
@@ -957,10 +981,12 @@ OBA_API_KEY = os.getenv("OBA_API_KEY", "TEST")
 def _init_transit_cache():
     """Create a Redis or in-memory cache for transit data."""
     import json as _json
+
     redis_url = os.getenv("REDIS_URL")
     if redis_url:
         try:
             import redis
+
             _redis = redis.from_url(redis_url, decode_responses=True)
             _redis.ping()
 
@@ -1017,15 +1043,17 @@ def _parse_arrivals(data: dict) -> list:
         else:
             status_str = "scheduled"
 
-        arrivals.append({
-            "routeShortName": ad.get("routeShortName") or ad.get("routeId", ""),
-            "tripHeadsign": ad.get("tripHeadsign") or "",
-            "predictedArrival": predicted if is_realtime else None,
-            "scheduledArrival": scheduled,
-            "minutesUntil": minutes_until,
-            "isRealTime": is_realtime,
-            "status": status_str,
-        })
+        arrivals.append(
+            {
+                "routeShortName": ad.get("routeShortName") or ad.get("routeId", ""),
+                "tripHeadsign": ad.get("tripHeadsign") or "",
+                "predictedArrival": predicted if is_realtime else None,
+                "scheduledArrival": scheduled,
+                "minutesUntil": minutes_until,
+                "isRealTime": is_realtime,
+                "status": status_str,
+            }
+        )
     # Sort by arrival time
     arrivals.sort(key=lambda a: a.get("scheduledArrival") or 0)
     return arrivals
@@ -1041,11 +1069,13 @@ def _parse_stop_info(data: dict) -> dict:
     routes = []
     for rid in route_ids:
         r = routes_map.get(rid, {})
-        routes.append({
-            "shortName": r.get("shortName", rid),
-            "longName": r.get("longName", ""),
-            "description": r.get("description", ""),
-        })
+        routes.append(
+            {
+                "shortName": r.get("shortName", rid),
+                "longName": r.get("longName", ""),
+                "description": r.get("description", ""),
+            }
+        )
 
     return {
         "stopName": entry.get("name", ""),
@@ -1064,7 +1094,9 @@ async def get_transit_arrivals(utility_id: str, db: Session = Depends(get_db)):
     if not utility:
         raise HTTPException(status_code=404, detail="Utility not found")
     if not utility.external_id:
-        raise HTTPException(status_code=404, detail="No transit stop ID linked to this utility")
+        raise HTTPException(
+            status_code=404, detail="No transit stop ID linked to this utility"
+        )
 
     stop_id = utility.external_id
     cache_key = f"arrivals:{stop_id}"
@@ -1075,19 +1107,26 @@ async def get_transit_arrivals(utility_id: str, db: Session = Depends(get_db)):
     url = f"{OBA_BASE_URL}/arrivals-and-departures-for-stop/{stop_id}.json"
     try:
         async with _httpx.AsyncClient(timeout=10.0) as client:
-            resp = await client.get(url, params={
-                "key": OBA_API_KEY,
-                "minutesBefore": 0,
-                "minutesAfter": 60,
-            })
+            resp = await client.get(
+                url,
+                params={
+                    "key": OBA_API_KEY,
+                    "minutesBefore": 0,
+                    "minutesAfter": 60,
+                },
+            )
             resp.raise_for_status()
             arrivals = _parse_arrivals(resp.json())
             _cache_set(cache_key, arrivals, ttl=30)
             return {"arrivals": arrivals, "stopId": stop_id, "cached": False}
     except _httpx.HTTPStatusError as e:
-        raise HTTPException(status_code=502, detail=f"OBA API error: {e.response.status_code}")
+        raise HTTPException(
+            status_code=502, detail=f"OBA API error: {e.response.status_code}"
+        )
     except Exception as e:
-        raise HTTPException(status_code=502, detail=f"Transit data unavailable: {str(e)}")
+        raise HTTPException(
+            status_code=502, detail=f"Transit data unavailable: {str(e)}"
+        )
 
 
 @app.get("/transit/stop-info/{utility_id}", tags=["Transit"])
@@ -1100,7 +1139,9 @@ async def get_transit_stop_info(utility_id: str, db: Session = Depends(get_db)):
     if not utility:
         raise HTTPException(status_code=404, detail="Utility not found")
     if not utility.external_id:
-        raise HTTPException(status_code=404, detail="No transit stop ID linked to this utility")
+        raise HTTPException(
+            status_code=404, detail="No transit stop ID linked to this utility"
+        )
 
     stop_id = utility.external_id
     cache_key = f"stop_info:{stop_id}"
@@ -1117,9 +1158,13 @@ async def get_transit_stop_info(utility_id: str, db: Session = Depends(get_db)):
             _cache_set(cache_key, info, ttl=300)
             return {**info, "cached": False}
     except _httpx.HTTPStatusError as e:
-        raise HTTPException(status_code=502, detail=f"OBA API error: {e.response.status_code}")
+        raise HTTPException(
+            status_code=502, detail=f"OBA API error: {e.response.status_code}"
+        )
     except Exception as e:
-        raise HTTPException(status_code=502, detail=f"Transit data unavailable: {str(e)}")
+        raise HTTPException(
+            status_code=502, detail=f"Transit data unavailable: {str(e)}"
+        )
 
 
 if __name__ == "__main__":
@@ -1128,5 +1173,5 @@ if __name__ == "__main__":
         host="0.0.0.0",
         port=8000,
         reload=(ENVIRONMENT == "development"),
-        log_level="info"
+        log_level="info",
     )

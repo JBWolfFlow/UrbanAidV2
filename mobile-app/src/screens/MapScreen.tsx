@@ -839,7 +839,7 @@ const MapScreen: React.FC = () => {
   // only markers that left the viewport are pruned, and new markers
   // are added in batches. This eliminates the simultaneous
   // unmount+mount bursts that crash the native Google Maps layer.
-  const renderedIdsRef = useRef<Set<number | string>>(new Set());
+  const renderedIdsRef = useRef<Set<string>>(new Set());
   const [renderTick, setRenderTick] = useState(0);
 
   // On viewport/filter change: prune stale markers, add first batch of new ones

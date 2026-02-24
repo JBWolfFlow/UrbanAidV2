@@ -8,15 +8,15 @@ This model supports:
 - Email verification workflow
 """
 
-from sqlalchemy import Column, Integer, String, Boolean, DateTime, Enum as SQLEnum, Text
+from sqlalchemy import Column, Integer, String, Boolean, DateTime, Text
 from sqlalchemy.sql import func
-from sqlalchemy.orm import relationship
 import enum
 from .database import Base
 
 
 class UserRole(str, enum.Enum):
     """User role enumeration for RBAC"""
+
     USER = "user"
     MODERATOR = "moderator"
     ADMIN = "admin"
@@ -39,6 +39,7 @@ class User(Base):
         created_at: Account creation timestamp
         updated_at: Last modification timestamp
     """
+
     __tablename__ = "users"
 
     # Primary identification
@@ -48,12 +49,7 @@ class User(Base):
     hashed_password = Column(String(255), nullable=False)
 
     # Role-based access control
-    role = Column(
-        String(20),
-        default=UserRole.USER.value,
-        nullable=False,
-        index=True
-    )
+    role = Column(String(20), default=UserRole.USER.value, nullable=False, index=True)
 
     # Account status
     is_active = Column(Boolean, default=True, nullable=False)
@@ -64,8 +60,12 @@ class User(Base):
 
     # Audit timestamps
     last_login = Column(DateTime(timezone=True), nullable=True)
-    created_at = Column(DateTime(timezone=True), server_default=func.now(), nullable=False)
-    updated_at = Column(DateTime(timezone=True), server_default=func.now(), onupdate=func.now())
+    created_at = Column(
+        DateTime(timezone=True), server_default=func.now(), nullable=False
+    )
+    updated_at = Column(
+        DateTime(timezone=True), server_default=func.now(), onupdate=func.now()
+    )
 
     # Relationships (to be defined as needed)
     # ratings = relationship("Rating", back_populates="user")
@@ -94,7 +94,7 @@ class User(Base):
         if self.is_moderator:
             return True
         # Assuming utility has a creator_id field
-        return hasattr(utility, 'creator_id') and utility.creator_id == self.id
+        return hasattr(utility, "creator_id") and utility.creator_id == self.id
 
     def can_delete_utility(self, utility) -> bool:
         """
@@ -105,4 +105,4 @@ class User(Base):
         """
         if self.is_admin:
             return True
-        return hasattr(utility, 'creator_id') and utility.creator_id == self.id
+        return hasattr(utility, "creator_id") and utility.creator_id == self.id

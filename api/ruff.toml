@@ -1,0 +1,12 @@
+[lint]
+# E712: `== True` / `== False` comparisons.
+# False positive for SQLAlchemy: `Model.col == True` invokes __eq__ to produce
+# a SQL clause; `if Model.col` would evaluate the Column's truthiness instead.
+ignore = ["E712"]
+
+[lint.per-file-ignores]
+# Alembic migrations import sqlalchemy dialects for side-effects (type registration).
+"alembic/**" = ["F401"]
+# main.py intentionally runs setup_logging() before other imports so that
+# any module-level logging during import uses the configured handler.
+"main.py" = ["E402"]

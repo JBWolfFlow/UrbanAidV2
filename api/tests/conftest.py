@@ -52,6 +52,7 @@ def override_get_db():
 # Fixtures
 # =============================================================================
 
+
 @pytest.fixture(scope="function")
 def db_session():
     """
@@ -175,7 +176,7 @@ def auth_headers(test_user) -> dict:
     Create authorization headers for the test user.
     """
     token = create_access_token(
-        data={"sub": test_user.username, "user_id": test_user.id}
+        data={"sub": test_user.username, "user_id": test_user.id, "role": "user"}
     )
     return {"Authorization": f"Bearer {token}"}
 
@@ -186,7 +187,7 @@ def admin_headers(test_admin) -> dict:
     Create authorization headers for the admin user.
     """
     token = create_access_token(
-        data={"sub": test_admin.username, "user_id": test_admin.id}
+        data={"sub": test_admin.username, "user_id": test_admin.id, "role": "admin"}
     )
     return {"Authorization": f"Bearer {token}"}
 
@@ -197,7 +198,11 @@ def moderator_headers(test_moderator) -> dict:
     Create authorization headers for the moderator user.
     """
     token = create_access_token(
-        data={"sub": test_moderator.username, "user_id": test_moderator.id}
+        data={
+            "sub": test_moderator.username,
+            "user_id": test_moderator.id,
+            "role": "moderator",
+        }
     )
     return {"Authorization": f"Bearer {token}"}
 
@@ -209,7 +214,7 @@ def expired_token_headers() -> dict:
     """
     token = create_access_token(
         data={"sub": "testuser", "user_id": 1},
-        expires_delta=timedelta(minutes=-30)  # Expired 30 minutes ago
+        expires_delta=timedelta(minutes=-30),  # Expired 30 minutes ago
     )
     return {"Authorization": f"Bearer {token}"}
 
@@ -222,11 +227,8 @@ def test_utility(db_session, test_user) -> Utility:
     utility = Utility(
         id="test-utility-001",
         name="Test Food Bank",
-        category="food_bank",
-        address="123 Test Street",
-        city="Test City",
-        state="TS",
-        zip_code="12345",
+        category="free_food",
+        address="123 Test Street, Test City, TS 12345",
         latitude=40.7128,
         longitude=-74.0060,
         phone="555-123-4567",
@@ -250,11 +252,8 @@ def test_utilities(db_session, test_user) -> list:
         Utility(
             id=f"utility-{i}",
             name=f"Test Utility {i}",
-            category=["food_bank", "shelter", "health_center"][i % 3],
-            address=f"{i * 100} Test Ave",
-            city="Test City",
-            state="TS",
-            zip_code=f"1234{i}",
+            category=["free_food", "shelter", "health_center"][i % 3],
+            address=f"{i * 100} Test Ave, Test City, TS",
             latitude=40.7128 + (i * 0.01),
             longitude=-74.0060 + (i * 0.01),
             verified=i % 2 == 0,
@@ -276,8 +275,9 @@ def test_rating(db_session, test_user, test_utility) -> Rating:
     rating = Rating(
         user_id=test_user.id,
         utility_id=test_utility.id,
-        score=4,
+        rating=4,
         comment="Great service, very helpful staff!",
+        is_active=True,
         created_at=datetime.utcnow(),
     )
     db_session.add(rating)
@@ -289,6 +289,7 @@ def test_rating(db_session, test_user, test_utility) -> Rating:
 # =============================================================================
 # Helper Functions
 # =============================================================================
+
 
 def create_test_user(
     db_session,
@@ -320,6 +321,4 @@ def get_auth_token(user: User) -> str:
     """
     Helper function to get an auth token for a user.
     """
-    return create_access_token(
-        data={"sub": user.username, "user_id": user.id}
-    )
+    return create_access_token(data={"sub": user.username, "user_id": user.id})

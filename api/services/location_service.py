@@ -26,15 +26,20 @@ EARTH_RADIUS_MI = 3958.8
 @dataclass
 class Coordinates:
     """Represents geographic coordinates."""
+
     latitude: float
     longitude: float
 
     def __post_init__(self):
         """Validate coordinates on creation."""
         if not (-90 <= self.latitude <= 90):
-            raise ValueError(f"Latitude must be between -90 and 90, got {self.latitude}")
+            raise ValueError(
+                f"Latitude must be between -90 and 90, got {self.latitude}"
+            )
         if not (-180 <= self.longitude <= 180):
-            raise ValueError(f"Longitude must be between -180 and 180, got {self.longitude}")
+            raise ValueError(
+                f"Longitude must be between -180 and 180, got {self.longitude}"
+            )
 
     def to_tuple(self) -> Tuple[float, float]:
         """Return coordinates as (lat, lng) tuple."""
@@ -48,6 +53,7 @@ class Coordinates:
 @dataclass
 class BoundingBox:
     """Represents a geographic bounding box for efficient queries."""
+
     min_lat: float
     max_lat: float
     min_lng: float
@@ -55,8 +61,9 @@ class BoundingBox:
 
     def contains(self, lat: float, lng: float) -> bool:
         """Check if a point is within the bounding box."""
-        return (self.min_lat <= lat <= self.max_lat and
-                self.min_lng <= lng <= self.max_lng)
+        return (
+            self.min_lat <= lat <= self.max_lat and self.min_lng <= lng <= self.max_lng
+        )
 
     def to_dict(self) -> Dict[str, float]:
         """Return bounding box as dictionary."""
@@ -64,7 +71,7 @@ class BoundingBox:
             "min_lat": self.min_lat,
             "max_lat": self.max_lat,
             "min_lng": self.min_lng,
-            "max_lng": self.max_lng
+            "max_lng": self.max_lng,
         }
 
 
@@ -89,11 +96,7 @@ class LocationService:
 
     @staticmethod
     def haversine_distance(
-        lat1: float,
-        lon1: float,
-        lat2: float,
-        lon2: float,
-        unit: str = "km"
+        lat1: float, lon1: float, lat2: float, lon2: float, unit: str = "km"
     ) -> float:
         """
         Calculate the great-circle distance between two points on Earth.
@@ -136,21 +139,17 @@ class LocationService:
         delta_lon = math.radians(lon2 - lon1)
 
         # Haversine formula
-        a = (math.sin(delta_lat / 2) ** 2 +
-             math.cos(lat1_rad) * math.cos(lat2_rad) *
-             math.sin(delta_lon / 2) ** 2)
+        a = (
+            math.sin(delta_lat / 2) ** 2
+            + math.cos(lat1_rad) * math.cos(lat2_rad) * math.sin(delta_lon / 2) ** 2
+        )
         c = 2 * math.atan2(math.sqrt(a), math.sqrt(1 - a))
 
         distance = radius * c
         return round(distance, 4)
 
     def calculate_distance(
-        self,
-        lat1: float,
-        lon1: float,
-        lat2: float,
-        lon2: float,
-        unit: str = "km"
+        self, lat1: float, lon1: float, lat2: float, lon2: float, unit: str = "km"
     ) -> float:
         """
         Calculate distance between two coordinates.
@@ -172,11 +171,7 @@ class LocationService:
     # =========================================================================
 
     @staticmethod
-    def get_bounding_box(
-        lat: float,
-        lng: float,
-        radius_km: float
-    ) -> BoundingBox:
+    def get_bounding_box(lat: float, lng: float, radius_km: float) -> BoundingBox:
         """
         Generate a bounding box around a point for efficient database queries.
 
@@ -217,14 +212,11 @@ class LocationService:
             min_lat=max(lat - lat_change, -90),
             max_lat=min(lat + lat_change, 90),
             min_lng=max(lng - lng_change, -180),
-            max_lng=min(lng + lng_change, 180)
+            max_lng=min(lng + lng_change, 180),
         )
 
     def get_nearby_points(
-        self,
-        latitude: float,
-        longitude: float,
-        radius_km: float
+        self, latitude: float, longitude: float, radius_km: float
     ) -> BoundingBox:
         """
         Get bounding box for finding nearby points within radius.
@@ -290,10 +282,7 @@ class LocationService:
             await self._session.aclose()
             self._session = None
 
-    async def geocode_address(
-        self,
-        address: str
-    ) -> Optional[Coordinates]:
+    async def geocode_address(self, address: str) -> Optional[Coordinates]:
         """
         Convert an address string to coordinates.
 
@@ -312,10 +301,7 @@ class LocationService:
         try:
             session = await self._get_session()
             url = "https://maps.googleapis.com/maps/api/geocode/json"
-            params = {
-                "address": address,
-                "key": self.google_api_key
-            }
+            params = {"address": address, "key": self.google_api_key}
 
             response = await session.get(url, params=params)
             response.raise_for_status()
@@ -323,10 +309,7 @@ class LocationService:
 
             if data["status"] == "OK" and data["results"]:
                 location = data["results"][0]["geometry"]["location"]
-                return Coordinates(
-                    latitude=location["lat"],
-                    longitude=location["lng"]
-                )
+                return Coordinates(latitude=location["lat"], longitude=location["lng"])
 
             logger.warning(f"Geocoding failed for '{address}': {data.get('status')}")
             return None
@@ -335,11 +318,7 @@ class LocationService:
             logger.error(f"Geocoding error for '{address}': {e}")
             return None
 
-    async def reverse_geocode(
-        self,
-        lat: float,
-        lng: float
-    ) -> Optional[Dict[str, str]]:
+    async def reverse_geocode(self, lat: float, lng: float) -> Optional[Dict[str, str]]:
         """
         Convert coordinates to an address.
 
@@ -353,16 +332,15 @@ class LocationService:
             Address dictionary if found, None otherwise.
         """
         if not self._geocoding_enabled:
-            logger.warning("Reverse geocoding disabled - GOOGLE_MAPS_API_KEY not configured")
+            logger.warning(
+                "Reverse geocoding disabled - GOOGLE_MAPS_API_KEY not configured"
+            )
             return None
 
         try:
             session = await self._get_session()
             url = "https://maps.googleapis.com/maps/api/geocode/json"
-            params = {
-                "latlng": f"{lat},{lng}",
-                "key": self.google_api_key
-            }
+            params = {"latlng": f"{lat},{lng}", "key": self.google_api_key}
 
             response = await session.get(url, params=params)
             response.raise_for_status()
@@ -370,9 +348,11 @@ class LocationService:
 
             if data["status"] == "OK" and data["results"]:
                 result = data["results"][0]
-                components = {c["types"][0]: c["long_name"]
-                             for c in result.get("address_components", [])
-                             if c.get("types")}
+                components = {
+                    c["types"][0]: c["long_name"]
+                    for c in result.get("address_components", [])
+                    if c.get("types")
+                }
 
                 return {
                     "formatted_address": result.get("formatted_address", ""),
@@ -381,10 +361,12 @@ class LocationService:
                     "city": components.get("locality", ""),
                     "state": components.get("administrative_area_level_1", ""),
                     "country": components.get("country", ""),
-                    "zip_code": components.get("postal_code", "")
+                    "zip_code": components.get("postal_code", ""),
                 }
 
-            logger.warning(f"Reverse geocoding failed for ({lat}, {lng}): {data.get('status')}")
+            logger.warning(
+                f"Reverse geocoding failed for ({lat}, {lng}): {data.get('status')}"
+            )
             return None
 
         except Exception as e:
@@ -401,7 +383,7 @@ class LocationService:
         origin_lng: float,
         points: List[Dict[str, Any]],
         lat_key: str = "latitude",
-        lng_key: str = "longitude"
+        lng_key: str = "longitude",
     ) -> List[Dict[str, Any]]:
         """
         Sort a list of points by distance from an origin.
@@ -419,8 +401,7 @@ class LocationService:
         for point in points:
             if lat_key in point and lng_key in point:
                 point["distance_km"] = self.haversine_distance(
-                    origin_lat, origin_lng,
-                    point[lat_key], point[lng_key]
+                    origin_lat, origin_lng, point[lat_key], point[lng_key]
                 )
             else:
                 point["distance_km"] = float("inf")
@@ -434,7 +415,7 @@ class LocationService:
         points: List[Dict[str, Any]],
         radius_km: float,
         lat_key: str = "latitude",
-        lng_key: str = "longitude"
+        lng_key: str = "longitude",
     ) -> List[Dict[str, Any]]:
         """
         Filter points to only those within a specified radius.
@@ -454,8 +435,7 @@ class LocationService:
         for point in points:
             if lat_key in point and lng_key in point:
                 distance = self.haversine_distance(
-                    origin_lat, origin_lng,
-                    point[lat_key], point[lng_key]
+                    origin_lat, origin_lng, point[lat_key], point[lng_key]
                 )
                 if distance <= radius_km:
                     point["distance_km"] = distance

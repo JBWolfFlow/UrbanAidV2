@@ -1,1 +1,1 @@
-"""Utils package for UrbanAid API""" 
+"""Utils package for UrbanAid API"""
