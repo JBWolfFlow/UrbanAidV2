@@ -40,14 +40,13 @@ import { getMarkerImage } from '../utils/markerImages';
 import { requestLocationPermission } from '../utils/permissions';
 
 import Svg, { Line, Circle, Path, Rect } from 'react-native-svg';
-import { apiService } from '../services/apiService';
 import { GradientButton, Chip } from '../components/ui';
 import { colors } from '../theme/colors';
 import { tokens } from '../theme/tokens';
 
 // ── Welcome Back Overlay ─────────────────────────────────────────────
 // Premium full-screen welcome shown on every cold launch (after onboarding).
-// Tracks real loading progress across API fetch → mount → render phases.
+// Gates UI while native GMSMarker objects are created from bundled data.
 
 interface WelcomeBackOverlayProps {
   visible: boolean;
@@ -423,7 +422,7 @@ const MapScreen: React.FC = () => {
   const insets = useSafeAreaInsets();
   const { isDarkMode } = useThemeStore();
   const { currentLocation, getCurrentLocation, hasLocationPermission, setLocationPermission } = useLocationStore();
-  const { utilities, isLoading, setLoading, setUtilities } = useUtilityStore();
+  const { utilities } = useUtilityStore();
 
   const mapRef = useRef<MapView>(null);
   const bottomSheetRef = useRef<BottomSheet>(null);
@@ -450,9 +449,6 @@ const MapScreen: React.FC = () => {
       longitudeDelta: 0.05,
     } : null,
   );
-  const initialFetchDone = useRef(false);
-  const fetchInProgress = useRef(false);
-
   // Refs for values needed inside useFocusEffect without triggering re-fires.
   const currentLocationRef = useRef(currentLocation);
   currentLocationRef.current = currentLocation;
@@ -474,64 +470,9 @@ const MapScreen: React.FC = () => {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [hasLocationPermission]);
 
-  // Fetch ALL utilities statewide — stale-while-revalidate pattern.
-  // If cached pins exist (persisted via Zustand), render them instantly
-  // and refresh from the API in the background. No loading spinner for cached data.
-  const fetchAllUtilities = useCallback(async (loc?: { latitude: number; longitude: number }) => {
-    if (fetchInProgress.current) {return;}
-    fetchInProgress.current = true;
 
-    const hasCachedData = utilities.length > 0;
-    if (!hasCachedData) {
-      setLoading(true);
-    }
 
-    try {
-      const results = await apiService.getAllUtilities();
-      setUtilities(results || []);
-      if (__DEV__) { console.log(`Loaded ${results?.length || 0} utilities statewide`); }
-    } catch (e: any) {
-      if (__DEV__) { console.warn('Statewide fetch failed:', e); }
-      if (!hasCachedData) {
-        const location = loc || currentLocationRef.current;
-        if (location) {
-          try {
-            const results = await apiService.getNearbyUtilities({
-              latitude: location.latitude,
-              longitude: location.longitude,
-              radius: 200.0,
-              limit: 5000,
-            } as any);
-            setUtilities(results || []);
-          } catch (e2: any) {
-            if (__DEV__) { console.warn('Backend fetch failed:', e2); }
-          }
-        }
-      }
-    } finally {
-      fetchInProgress.current = false;
-      setLoading(false);
-    }
-  }, [utilities.length, setUtilities, setLoading]);
-
-  // Initial fetch — fires ONCE on mount, loads ALL WA utilities
-  useEffect(() => {
-    if (initialFetchDone.current) {return;}
-    initialFetchDone.current = true;
-    fetchAllUtilities();
-  }, [fetchAllUtilities]);
-
-  // Retry when location becomes available if initial fetch loaded zero utilities.
-  // Catches the case where the first fetch failed because location wasn't ready.
-  // Only depends on currentLocation so it fires once when location first arrives.
-  // Uses utilitiesLengthRef to avoid re-triggering on every fetch completion.
-  useEffect(() => {
-    if (currentLocation && utilitiesLengthRef.current === 0 && initialFetchDone.current) {
-      fetchAllUtilities(currentLocation);
-    }
-  }, [currentLocation, fetchAllUtilities]);
-
-  // Re-center map + re-fetch utilities every time the Map tab gains focus.
+  // Re-center map every time the Map tab gains focus.
   useFocusEffect(
     useCallback(() => {
       const loc = currentLocationRef.current;
@@ -543,21 +484,7 @@ const MapScreen: React.FC = () => {
           longitudeDelta: 0.01,
         }, 500);
       }
-      // Re-fetch so new utilities (added via AddUtilityScreen) appear.
-      if (initialFetchDone.current) {
-        fetchAllUtilities();
-      }
-
-      // Delayed retry — if fetchInProgress blocked the call above and we still
-      // have 0 utilities after 3s, try once more.
-      const retryTimer = setTimeout(() => {
-        if (utilitiesLengthRef.current === 0 && !fetchInProgress.current) {
-          fetchAllUtilities();
-        }
-      }, 3000);
-
-      return () => clearTimeout(retryTimer);
-    }, [fetchAllUtilities]),
+    }, []),
   );
 
   // Center map on user location once it becomes available for the first time.
@@ -910,51 +837,38 @@ const MapScreen: React.FC = () => {
     [markersToRender, renderTick],
   );
 
-  // Loading overlay — shown during initial data fetch + progressive mount only.
+  // Loading overlay — shown during progressive mount only (no API fetch phase).
   const initialLoadCompleteRef = useRef(false);
 
   // ── Time-based welcome screen gate ────────────────────────────────
-  // Ensures the welcome screen stays visible for MIN_DISPLAY_MS after
-  // API data arrives, giving the progress bar time to fill smoothly.
-  const dataReadyTimeRef = useRef<number | null>(null);
+  // Ensures the welcome screen stays visible for MIN_DISPLAY_MS,
+  // giving the progress bar time to fill while native markers are created.
+  const dataReadyTimeRef = useRef<number>(Date.now());
   const MIN_DISPLAY_MS = 5000;
 
-  // Record when API data arrives
   useEffect(() => {
-    if (!isLoading && utilities.length > 0 && dataReadyTimeRef.current === null) {
-      dataReadyTimeRef.current = Date.now();
-    }
-  }, [isLoading, utilities.length]);
-
-  useEffect(() => {
-    if (isLoading) { setRenderComplete(false); return; }
     if (mountedCount < utilities.length) { setRenderComplete(false); return; }
     // Wait for the stable render set to finish adding all visible markers
     const target = Math.min(markersToRender.length, MAX_RENDERED);
     if (target > 0 && renderedIdsRef.current.size < target) { setRenderComplete(false); return; }
     // Enforce minimum display time so pins fully load behind the welcome screen
-    const elapsed = dataReadyTimeRef.current ? Date.now() - dataReadyTimeRef.current : 0;
+    const elapsed = Date.now() - dataReadyTimeRef.current;
     const remaining = Math.max(1500, MIN_DISPLAY_MS - elapsed);
     const timer = setTimeout(() => setRenderComplete(true), remaining);
     return () => clearTimeout(timer);
-  }, [isLoading, mountedCount, utilities.length, markersToRender.length, renderTick]);
+  }, [mountedCount, utilities.length, markersToRender.length, renderTick]);
 
   // Mark initial load as complete so tab switches don't re-show the overlay.
   useEffect(() => {
-    if (!isLoading && renderComplete) {
+    if (renderComplete) {
       initialLoadCompleteRef.current = true;
     }
-  }, [isLoading, renderComplete]);
+  }, [renderComplete]);
 
-  // Two-phase progress: 10% during API fetch → 100% when data ready (overlay animates the fill)
-  const loadingProgress = useMemo(() => {
-    if (isLoading) {return 0.1;}  // API fetch phase
-    return 1.0;                 // Data ready — overlay fills over fillDurationMs
-  }, [isLoading]);
-
-  const loadingStatusText = isLoading
-    ? 'Fetching resources…'
-    : 'Loading map pins…';
+  // Progress is always 1.0 — bundled data is available synchronously.
+  // The overlay fills over fillDurationMs while native markers are created.
+  const loadingProgress = 1.0;
+  const loadingStatusText = 'Loading map pins…';
 
   // Cleanup debounce timer on unmount
   useEffect(() => {
@@ -964,7 +878,7 @@ const MapScreen: React.FC = () => {
   }, []);
 
   // Show overlay on cold launch only — not on tab re-focus.
-  const showLoadingOverlay = !initialLoadCompleteRef.current && (isLoading || !renderComplete);
+  const showLoadingOverlay = !initialLoadCompleteRef.current && !renderComplete;
 
   const fabAnimatedStyle = useAnimatedStyle(() => ({
     transform: [{ rotate: `${fabRotation.value}deg` }],

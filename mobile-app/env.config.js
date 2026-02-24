@@ -4,7 +4,7 @@
 // 1. URBANAID_API_URL env var (set via EAS secrets for production builds)
 // 2. __DEV__ detection: local IP for dev, production URL for release builds
 
-const DEV_API_URL = 'http://10.0.0.175:8000';
+const DEV_API_URL = 'https://urbanaidv2-production.up.railway.app';
 const PROD_API_URL = 'https://urbanaidv2-production.up.railway.app';
 
 const isProduction = !__DEV__;

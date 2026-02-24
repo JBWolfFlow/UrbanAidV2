@@ -3,6 +3,7 @@ import { persist, createJSONStorage } from 'zustand/middleware';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { Utility, UtilityFilter, UtilityCreateData } from '../types/utility';
 import { apiService } from '../services/apiService';
+import bundledUtilities from '../assets/data/utilities.json';
 
 
 interface UtilityState {
@@ -43,12 +44,12 @@ export const useUtilityStore = create<UtilityState>()(
   persist(
     (set, get) => {
       return {
-        utilities: [],
+        utilities: bundledUtilities as unknown as Utility[],
         selectedUtility: null,
         isLoading: false,
         error: null,
         lastFetchLocation: null,
-        lastFetchTimestamp: null,
+        lastFetchTimestamp: 0,
         searchQuery: '',
         activeFilters: {
           radius: 25.0,
@@ -244,7 +245,7 @@ export const useUtilityStore = create<UtilityState>()(
 
         clearCache: () => {
           set({
-            utilities: [],
+            utilities: bundledUtilities as unknown as Utility[],
             selectedUtility: null,
             error: null,
             lastFetchLocation: null,
@@ -254,13 +255,24 @@ export const useUtilityStore = create<UtilityState>()(
       };
     },
     {
-      name: 'utility-storage-v3',
+      name: 'utility-storage-v4',
       storage: createJSONStorage(() => AsyncStorage),
       partialize: (state) => ({
         utilities: state.utilities,
         activeFilters: state.activeFilters,
         lastFetchTimestamp: state.lastFetchTimestamp,
       }),
+      merge: (persisted, current) => {
+        const persistedState = persisted as Partial<UtilityState>;
+        return {
+          ...(current as UtilityState),
+          ...persistedState,
+          // Never let a cached empty array overwrite bundled pin data
+          utilities: (persistedState?.utilities?.length ?? 0) > 0
+            ? persistedState!.utilities!
+            : (current as UtilityState).utilities,
+        };
+      },
     },
   ),
 );
