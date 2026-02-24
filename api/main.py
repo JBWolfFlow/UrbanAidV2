@@ -748,7 +748,7 @@ async def get_nearby_va_facilities(
 ):
     """Find nearby VA (Veterans Affairs) medical facilities. Served from seeded database."""
     try:
-        radius_km = radius_miles * 1.60934
+        radius_km = min(radius_miles * 1.60934, 50.0)
         results = await utility_controller.get_nearby_utilities(
             db=db,
             latitude=latitude,
