@@ -489,9 +489,9 @@ const MapScreen: React.FC = () => {
     try {
       const results = await apiService.getAllUtilities();
       setUtilities(results || []);
-      if (__DEV__) console.log(`Loaded ${results?.length || 0} utilities statewide`);
+      if (__DEV__) { console.log(`Loaded ${results?.length || 0} utilities statewide`); }
     } catch (e: any) {
-      if (__DEV__) console.warn('Statewide fetch failed:', e);
+      if (__DEV__) { console.warn('Statewide fetch failed:', e); }
       if (!hasCachedData) {
         const location = loc || currentLocationRef.current;
         if (location) {
@@ -504,7 +504,7 @@ const MapScreen: React.FC = () => {
             } as any);
             setUtilities(results || []);
           } catch (e2: any) {
-            if (__DEV__) console.warn('Backend fetch failed:', e2);
+            if (__DEV__) { console.warn('Backend fetch failed:', e2); }
           }
         }
       }
