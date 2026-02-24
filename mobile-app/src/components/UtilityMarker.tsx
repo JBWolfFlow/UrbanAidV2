@@ -61,7 +61,7 @@ const UtilityMarkerComponent: React.FC<UtilityMarkerProps> = ({
             height: s.circle + s.glow * 2,
             borderRadius: (s.circle + s.glow * 2) / 2,
             backgroundColor: categoryColor,
-          }
+          },
         ]} />
       )}
 
@@ -90,7 +90,7 @@ const UtilityMarkerComponent: React.FC<UtilityMarkerProps> = ({
           borderRightWidth: s.pointer,
           borderTopWidth: s.pointer + 2,
           borderTopColor: categoryColor,
-        }
+        },
       ]} />
     </View>
   );

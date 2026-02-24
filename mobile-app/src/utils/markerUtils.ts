@@ -10,8 +10,8 @@ const PROBLEMATIC_REGIONS = {
       north: 33.7,
       south: 33.2,
       east: -111.8,
-      west: -112.4
-    }
+      west: -112.4,
+    },
   },
   CHICAGO: {
     name: 'Chicago',
@@ -19,9 +19,9 @@ const PROBLEMATIC_REGIONS = {
       north: 42.0,
       south: 41.6,
       east: -87.5,
-      west: -87.9
-    }
-  }
+      west: -87.9,
+    },
+  },
 };
 
 /**
@@ -29,7 +29,7 @@ const PROBLEMATIC_REGIONS = {
  */
 export const isInProblematicRegion = (utility: Utility): boolean => {
   const { latitude, longitude } = utility;
-  
+
   return Object.values(PROBLEMATIC_REGIONS).some(region => {
     return (
       latitude >= region.bounds.south &&
@@ -46,11 +46,11 @@ export const isInProblematicRegion = (utility: Utility): boolean => {
  */
 export const getOptimizedMarkerProps = (utility: Utility, isMarkerReady: boolean) => {
   const isProblematic = isInProblematicRegion(utility);
-  
+
   // For ALL markers, use aggressive anti-flickering if they're ready
   // For problematic regions, always use false
   const shouldTrackChanges = isProblematic ? false : !isMarkerReady;
-  
+
   return {
     // More aggressive anti-flickering
     tracksViewChanges: shouldTrackChanges,
@@ -71,7 +71,7 @@ export const getOptimizedMarkerProps = (utility: Utility, isMarkerReady: boolean
  */
 export const debounceMarkerUpdate = <T extends (...args: any[]) => any>(
   func: T,
-  delay: number = 20 // Shorter delay for faster response
+  delay: number = 20, // Shorter delay for faster response
 ): ((...args: Parameters<T>) => void) => {
   let timeoutId: NodeJS.Timeout;
   return (...args: Parameters<T>) => {
@@ -95,11 +95,11 @@ export const createStableMarkerKey = (utility: Utility): string => {
 export const shouldUseImmediateStableMode = (utility: Utility): boolean => {
   // Use immediate stable mode for problematic regions or utilities with specific names
   const isProblematic = isInProblematicRegion(utility);
-  const hasProblematicName = utility.name?.toLowerCase().includes('phoenix') || 
+  const hasProblematicName = utility.name?.toLowerCase().includes('phoenix') ||
                             utility.name?.toLowerCase().includes('chicago') ||
                             utility.description?.toLowerCase().includes('phoenix') ||
                             utility.description?.toLowerCase().includes('chicago') ||
                             false;
-  
+
   return isProblematic || !!hasProblematicName;
-}; 
+};

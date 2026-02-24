@@ -36,7 +36,7 @@ export const FilterModal: React.FC<FilterModalProps> = ({
   onApplyFilters,
 }) => {
   const theme = useTheme();
-  
+
   const [filters, setFilters] = useState<FilterState>({
     utilityTypes: [],
     verifiedOnly: false,
@@ -55,26 +55,26 @@ export const FilterModal: React.FC<FilterModalProps> = ({
     { type: 'atm', label: 'ATMs', icon: '🏧', category: 'Infrastructure' },
     { type: 'phone_booth', label: 'Phone Booths', icon: '📞', category: 'Infrastructure' },
     { type: 'bench', label: 'Benches', icon: '🪑', category: 'Infrastructure' },
-    
+
     // Government Health Services (HRSA)
     { type: 'health_center', label: 'Health Centers', icon: '🏥', category: 'Health Services' },
     { type: 'community_health_center', label: 'Community Health Centers', icon: '🏥', category: 'Health Services' },
     { type: 'migrant_health_center', label: 'Migrant Health Centers', icon: '🚑', category: 'Health Services' },
     { type: 'federally_qualified_health_center', label: 'FQHCs', icon: '🏥', category: 'Health Services' },
-    
-    // VA Medical Services  
+
+    // VA Medical Services
     { type: 'va_medical_center', label: 'VA Medical Centers', icon: '🏥', category: 'Veterans Services' },
     { type: 'va_outpatient_clinic', label: 'VA Outpatient Clinics', icon: '🏥', category: 'Veterans Services' },
     { type: 'va_vet_center', label: 'Vet Centers', icon: '🇺🇸', category: 'Veterans Services' },
     { type: 'va_regional_office', label: 'VA Regional Offices', icon: '🏛️', category: 'Veterans Services' },
-    
+
     // USDA Services
     { type: 'usda_rural_development_office', label: 'USDA Rural Development', icon: '🌾', category: 'USDA Services' },
     { type: 'usda_snap_office', label: 'SNAP/Food Assistance', icon: '🍽️', category: 'USDA Services' },
     { type: 'usda_farm_service_center', label: 'Farm Service Centers', icon: '🚜', category: 'USDA Services' },
     { type: 'usda_extension_office', label: 'Extension Offices', icon: '🎓', category: 'USDA Services' },
     { type: 'usda_wic_office', label: 'WIC Offices', icon: '👶', category: 'USDA Services' },
-    
+
     // Essential Services
     { type: 'shelter', label: 'Emergency Shelters', icon: '🏠', category: 'Essential Services' },
     { type: 'food', label: 'Food Assistance', icon: '🍽️', category: 'Essential Services' },
@@ -95,7 +95,7 @@ export const FilterModal: React.FC<FilterModalProps> = ({
       ...prev,
       utilityTypes: prev.utilityTypes.includes(type)
         ? prev.utilityTypes.filter(t => t !== type)
-        : [...prev.utilityTypes, type]
+        : [...prev.utilityTypes, type],
     }));
   };
 
@@ -118,11 +118,11 @@ export const FilterModal: React.FC<FilterModalProps> = ({
 
   const getActiveFilterCount = () => {
     let count = 0;
-    if (filters.utilityTypes.length > 0) count++;
-    if (filters.verifiedOnly) count++;
-    if (filters.accessibleOnly) count++;
-    if (filters.openNow) count++;
-    if (filters.maxDistance !== 5000) count++;
+    if (filters.utilityTypes.length > 0) {count++;}
+    if (filters.verifiedOnly) {count++;}
+    if (filters.accessibleOnly) {count++;}
+    if (filters.openNow) {count++;}
+    if (filters.maxDistance !== 5000) {count++;}
     return count;
   };
 
@@ -133,7 +133,7 @@ export const FilterModal: React.FC<FilterModalProps> = ({
         onDismiss={onDismiss}
         contentContainerStyle={[
           styles.modalContainer,
-          { backgroundColor: theme.colors.surface }
+          { backgroundColor: theme.colors.surface },
         ]}
       >
         <Card mode="outlined">
@@ -149,7 +149,7 @@ export const FilterModal: React.FC<FilterModalProps> = ({
               {/* Utility Types - Grouped by Category */}
               <View style={styles.section}>
                 <Paragraph style={styles.sectionTitle}>Utility Types</Paragraph>
-                
+
                 {/* Group utilities by category */}
                 {['Infrastructure', 'Health Services', 'Veterans Services', 'USDA Services', 'Essential Services'].map((categoryName) => (
                   <View key={categoryName} style={styles.categoryGroup}>
@@ -179,7 +179,7 @@ export const FilterModal: React.FC<FilterModalProps> = ({
               {/* Quality Filters */}
               <View style={styles.section}>
                 <Paragraph style={styles.sectionTitle}>Quality & Features</Paragraph>
-                
+
                 <List.Item
                   title="Verified Only"
                   description="Show only verified utilities"
@@ -187,7 +187,7 @@ export const FilterModal: React.FC<FilterModalProps> = ({
                   right={() => (
                     <Switch
                       value={filters.verifiedOnly}
-                      onValueChange={(value) => 
+                      onValueChange={(value) =>
                         setFilters(prev => ({ ...prev, verifiedOnly: value }))
                       }
                     />
@@ -201,7 +201,7 @@ export const FilterModal: React.FC<FilterModalProps> = ({
                   right={() => (
                     <Switch
                       value={filters.accessibleOnly}
-                      onValueChange={(value) => 
+                      onValueChange={(value) =>
                         setFilters(prev => ({ ...prev, accessibleOnly: value }))
                       }
                     />
@@ -215,7 +215,7 @@ export const FilterModal: React.FC<FilterModalProps> = ({
                   right={() => (
                     <Switch
                       value={filters.openNow}
-                      onValueChange={(value) => 
+                      onValueChange={(value) =>
                         setFilters(prev => ({ ...prev, openNow: value }))
                       }
                     />
@@ -234,7 +234,7 @@ export const FilterModal: React.FC<FilterModalProps> = ({
                       key={option.value}
                       mode={filters.maxDistance === option.value ? 'flat' : 'outlined'}
                       selected={filters.maxDistance === option.value}
-                      onPress={() => 
+                      onPress={() =>
                         setFilters(prev => ({ ...prev, maxDistance: option.value }))
                       }
                       style={styles.chip}
@@ -325,4 +325,4 @@ const styles = StyleSheet.create({
     marginBottom: 8,
     opacity: 0.7,
   },
-}); 
+});

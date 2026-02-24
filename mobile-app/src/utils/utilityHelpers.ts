@@ -12,62 +12,62 @@ export const getUtilityIcon = (type: UtilityType | UtilityCategory | string): st
     case 'water_fountain':
     case 'water':
       return '💧';
-    
+
     // Basic Infrastructure - RESTROOMS
     case 'restroom':
       return '🚻';
-    
-    // Basic Infrastructure - CHARGING  
+
+    // Basic Infrastructure - CHARGING
     case 'charging_station':
     case 'charging':
       return '🔌';
-    
+
     // Basic Infrastructure - PARKING
     case 'parking':
       return '🅿️';
-    
+
     // Basic Infrastructure - WIFI
     case 'wifi':
       return '📶';
-    
+
     // Basic Infrastructure - ATM
     case 'atm':
       return '🏧';
-    
+
     // Basic Infrastructure - PHONE
     case 'phone_booth':
       return '📞';
-    
+
     // Basic Infrastructure - SEATING
     case 'bench':
       return '🪑';
-    
+
     // Basic Infrastructure - HYGIENE
     case 'handwashing':
       return '🧼';
-    
+
     // Transportation
     case 'transit':
       return '🚌';
-    
+
     // Information/Education
     case 'library':
       return '📚';
-    
+
     // Essential Services - SHELTER
     case 'shelter':
       return '🏠';
-    
+
     // Essential Services - FOOD
     case 'free_food':
     case 'food':
       return '🍽️';
-    
+
     // Essential Services - MEDICAL
     case 'clinic':
     case 'medical':
       return '🏥';
-    
+
     // Hygiene & Personal Care
     case 'shower':
       return '🚿';
@@ -75,7 +75,7 @@ export const getUtilityIcon = (type: UtilityType | UtilityCategory | string): st
       return '🧺';
     case 'haircut':
       return '✂️';
-    
+
     // Critical Support Services
     case 'legal':
       return '⚖️';
@@ -91,7 +91,7 @@ export const getUtilityIcon = (type: UtilityType | UtilityCategory | string): st
       return '☎️';
     case 'domestic_violence':
       return '🛡️';
-    
+
     // Emergency Services
     case 'warming_center':
       return '🔥';
@@ -101,7 +101,7 @@ export const getUtilityIcon = (type: UtilityType | UtilityCategory | string): st
       return '🌪️';
     case 'hurricane_shelter':
       return '🌀';
-    
+
     // Specialized Services
     case 'needle_exchange':
     case 'safe_injection':
@@ -120,7 +120,7 @@ export const getUtilityIcon = (type: UtilityType | UtilityCategory | string): st
       return '💻';
     case 'clothing':
       return '👕';
-    
+
     // Default fallback
     default:
       return '📍';
@@ -136,12 +136,12 @@ export const getUtilityIcon = (type: UtilityType | UtilityCategory | string): st
 export const getUtilityVectorIcon = (type: UtilityType | UtilityCategory | string): string => {
   // Handle prefix-based categories first
   const lower = type.toLowerCase();
-  if (lower.startsWith('va_') || lower === 'va_facility') return 'star-circle';
-  if (lower.startsWith('usda_')) return 'sprout';
+  if (lower.startsWith('va_') || lower === 'va_facility') {return 'star-circle';}
+  if (lower.startsWith('usda_')) {return 'sprout';}
   if (lower.startsWith('health_center') || lower.startsWith('community_health') ||
       lower.startsWith('migrant_health') || lower.startsWith('homeless_health') ||
       lower.startsWith('public_housing_health') || lower.startsWith('school_based_health') ||
-      lower.startsWith('federally_qualified')) return 'hospital-box';
+      lower.startsWith('federally_qualified')) {return 'hospital-box';}
 
   switch (type) {
     case 'water_fountain':
@@ -257,7 +257,7 @@ export const getUtilityTypeName = (type: UtilityType | UtilityCategory | string)
       return 'Transit Stop';
     case 'library':
       return 'Library';
-    
+
     // Essential Services
     case 'shelter':
       return 'Emergency Shelter';
@@ -267,7 +267,7 @@ export const getUtilityTypeName = (type: UtilityType | UtilityCategory | string)
     case 'clinic':
     case 'medical':
       return 'Medical Clinic';
-    
+
     // Hygiene & Personal Care
     case 'shower':
       return 'Shower Facility';
@@ -275,7 +275,7 @@ export const getUtilityTypeName = (type: UtilityType | UtilityCategory | string)
       return 'Laundry Service';
     case 'haircut':
       return 'Free Haircuts';
-    
+
     // Critical Support Services
     case 'legal':
       return 'Legal Aid';
@@ -291,7 +291,7 @@ export const getUtilityTypeName = (type: UtilityType | UtilityCategory | string)
       return 'Crisis Support';
     case 'domestic_violence':
       return 'DV Safe House';
-    
+
     // Emergency Services
     case 'warming_center':
       return 'Warming Center';
@@ -301,7 +301,7 @@ export const getUtilityTypeName = (type: UtilityType | UtilityCategory | string)
       return 'Disaster Relief';
     case 'hurricane_shelter':
       return 'Hurricane Shelter';
-    
+
     // Specialized Services
     case 'needle_exchange':
       return 'Needle Exchange';
@@ -321,7 +321,7 @@ export const getUtilityTypeName = (type: UtilityType | UtilityCategory | string)
       return 'Computer Center';
     case 'clothing':
       return 'Clothing Bank';
-    
+
     default:
       return 'Public Utility';
   }
@@ -388,7 +388,7 @@ export const isUtilityOpenNow = (utility: { hours?: string; is24Hours?: boolean 
   // and check against current time
   const now = new Date();
   const currentHour = now.getHours();
-  
+
   // Simple heuristic: assume most utilities are open 6 AM to 10 PM
   return currentHour >= 6 && currentHour <= 22;
 };
@@ -403,11 +403,11 @@ export const formatUtilityHours = (hours?: string, is24Hours?: boolean): string 
   if (is24Hours) {
     return '24/7';
   }
-  
+
   if (!hours) {
     return 'Hours not specified';
   }
-  
+
   return hours;
 };
 
@@ -421,7 +421,7 @@ export const getUtilityAccessibility = (utility: {
   isAccessible?: boolean;
 }) => {
   const isAccessible = utility.wheelchair_accessible || utility.isAccessible || false;
-  
+
   return {
     isAccessible,
     accessibilityText: isAccessible ? 'Wheelchair accessible' : 'Accessibility unknown',
@@ -439,7 +439,7 @@ export const getUtilityAccessibility = (utility: {
 export const sortUtilitiesByDistance = (
   utilities: Array<{ latitude: number; longitude: number; distance?: number }>,
   userLat: number,
-  userLng: number
+  userLng: number,
 ) => {
   return utilities
     .map(utility => ({
@@ -461,12 +461,12 @@ const calculateDistance = (lat1: number, lng1: number, lat2: number, lng2: numbe
   const R = 6371; // Earth's radius in kilometers
   const dLat = toRadians(lat2 - lat1);
   const dLng = toRadians(lng2 - lng1);
-  
+
   const a =
     Math.sin(dLat / 2) * Math.sin(dLat / 2) +
-    Math.cos(toRadians(lat1)) * Math.cos(toRadians(lat2)) * 
+    Math.cos(toRadians(lat1)) * Math.cos(toRadians(lat2)) *
     Math.sin(dLng / 2) * Math.sin(dLng / 2);
-  
+
   const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
   return R * c;
 };
@@ -476,4 +476,4 @@ const calculateDistance = (lat1: number, lng1: number, lat2: number, lng2: numbe
  */
 const toRadians = (degrees: number): number => {
   return degrees * (Math.PI / 180);
-}; 
+};

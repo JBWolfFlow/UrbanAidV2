@@ -1,5 +1,5 @@
 import React from 'react';
-import { View, StyleSheet } from 'react-native';
+import { StyleSheet } from 'react-native';
 import {
   Modal,
   Portal,
@@ -33,7 +33,7 @@ export const LocationPermissionModal: React.FC = () => {
         dismissable={false}
         contentContainerStyle={[
           styles.modalContainer,
-          { backgroundColor: theme.colors.surface }
+          { backgroundColor: theme.colors.surface },
         ]}
       >
         <Card mode="outlined">
@@ -86,4 +86,4 @@ const styles = StyleSheet.create({
     paddingHorizontal: 16,
     paddingBottom: 16,
   },
-}); 
+});

@@ -79,7 +79,7 @@ export const useLocationStore = create<LocationState>()(
       getCurrentLocation: (): Promise<Location | null> => {
         return new Promise((resolve) => {
           const { hasLocationPermission, setLocationLoading, setLocationError, setCurrentLocation } = get();
-          
+
           if (!hasLocationPermission) {
             setLocationError('Location permission not granted');
             resolve(null);
@@ -111,7 +111,7 @@ export const useLocationStore = create<LocationState>()(
               enableHighAccuracy: true,
               timeout: 15000,
               maximumAge: 10000,
-            }
+            },
           );
         });
       },
@@ -122,7 +122,7 @@ export const useLocationStore = create<LocationState>()(
        */
       watchLocation: (): number | null => {
         const { hasLocationPermission, setLocationError, setCurrentLocation } = get();
-        
+
         if (!hasLocationPermission) {
           setLocationError('Location permission not granted');
           return null;
@@ -147,7 +147,7 @@ export const useLocationStore = create<LocationState>()(
             interval: 10000,
             fastestInterval: 5000,
             distanceFilter: 10,
-          }
+          },
         );
 
         return watchId;
@@ -168,6 +168,6 @@ export const useLocationStore = create<LocationState>()(
         hasLocationPermission: state.hasLocationPermission,
         // Don't persist location data for privacy
       }),
-    }
-  )
-); 
+    },
+  ),
+);

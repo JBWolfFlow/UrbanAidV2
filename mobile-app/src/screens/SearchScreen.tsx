@@ -17,24 +17,19 @@ import {
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { BlurView } from 'expo-blur';
 import { LinearGradient } from 'expo-linear-gradient';
-import Svg, { Circle, Path, Line, Rect, G } from 'react-native-svg';
+import Svg, { Circle, Path, Line, Rect } from 'react-native-svg';
 import Animated, {
-  useSharedValue,
-  useAnimatedStyle,
-  withSpring,
-  interpolate,
   FadeInDown,
-  FadeIn,
 } from 'react-native-reanimated';
 
-import { useThemeStore, useCustomTheme } from '../stores/themeStore';
+import { useThemeStore } from '../stores/themeStore';
 import { useUtilityStore } from '../stores/utilityStore';
 import { useLocationStore } from '../stores/locationStore';
 import { Utility, UtilityType } from '../types/utility';
 import { calculateDistance } from '../utils/location';
 import { getUtilityTypeName } from '../utils/utilityHelpers';
 import { useTranslation } from '../services/i18n';
-import { GlassCard, GradientButton, Chip, SkeletonListItem } from '../components/ui';
+import { GlassCard, GradientButton, Chip } from '../components/ui';
 import { colors, getUtilityColor } from '../theme/colors';
 import { tokens } from '../theme/tokens';
 
@@ -66,31 +61,31 @@ const CategoryIcon: React.FC<{ category: string; color: string; size?: number }>
   const lower = category.toLowerCase();
 
   if (lower.includes('water') || lower === 'handwashing')
-    return <Svg {...p}><Path d="M12 2C12 2 5 10 5 14.5C5 18.64 8.13 22 12 22C15.87 22 19 18.64 19 14.5C19 10 12 2 12 2Z" /></Svg>;
+    {return <Svg {...p}><Path d="M12 2C12 2 5 10 5 14.5C5 18.64 8.13 22 12 22C15.87 22 19 18.64 19 14.5C19 10 12 2 12 2Z" /></Svg>;}
   if (lower === 'restroom')
-    return <Svg {...p}><Circle cx="12" cy="5" r="2.5" /><Path d="M12 10v6M9 22v-5l3-1 3 1v5M8 13h8" /></Svg>;
+    {return <Svg {...p}><Circle cx="12" cy="5" r="2.5" /><Path d="M12 10v6M9 22v-5l3-1 3 1v5M8 13h8" /></Svg>;}
   if (lower.includes('charging'))
-    return <Svg {...p}><Path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z" /></Svg>;
+    {return <Svg {...p}><Path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z" /></Svg>;}
   if (lower === 'wifi' || lower === 'internet')
-    return <Svg {...p}><Path d="M2 8.5C5.5 4.5 10.5 3 12 3s6.5 1.5 10 5.5" /><Path d="M5.5 12C7.5 9.5 10 8.5 12 8.5s4.5 1 6.5 3.5" /><Path d="M9 15.5C10 14.5 11 14 12 14s2 .5 3 1.5" /><Circle cx="12" cy="19" r="1.5" fill={color} /></Svg>;
+    {return <Svg {...p}><Path d="M2 8.5C5.5 4.5 10.5 3 12 3s6.5 1.5 10 5.5" /><Path d="M5.5 12C7.5 9.5 10 8.5 12 8.5s4.5 1 6.5 3.5" /><Path d="M9 15.5C10 14.5 11 14 12 14s2 .5 3 1.5" /><Circle cx="12" cy="19" r="1.5" fill={color} /></Svg>;}
   if (lower === 'food' || lower === 'free_food')
-    return <Svg {...p}><Path d="M3 2v8c0 1.66 1.34 3 3 3h1v9" /><Path d="M7 2v4" /><Path d="M3 6h4" /><Path d="M17 2v20" /><Path d="M21 10c0-4.42-1.79-8-4-8v8" /></Svg>;
+    {return <Svg {...p}><Path d="M3 2v8c0 1.66 1.34 3 3 3h1v9" /><Path d="M7 2v4" /><Path d="M3 6h4" /><Path d="M17 2v20" /><Path d="M21 10c0-4.42-1.79-8-4-8v8" /></Svg>;}
   if (lower.includes('shelter') || lower.includes('warming') || lower.includes('cooling') || lower.includes('hurricane'))
-    return <Svg {...p}><Path d="M3 12l9-9 9 9" /><Path d="M5 10v10h14V10" /><Rect x="9" y="14" width="6" height="6" /></Svg>;
+    {return <Svg {...p}><Path d="M3 12l9-9 9 9" /><Path d="M5 10v10h14V10" /><Rect x="9" y="14" width="6" height="6" /></Svg>;}
   if (lower.includes('health') || lower === 'clinic' || lower === 'medical')
-    return <Svg {...p}><Path d="M12 21C12 21 3 14 3 8.5C3 5.42 5.42 3 8.5 3C10.24 3 11.91 3.81 12 5C12.09 3.81 13.76 3 15.5 3C18.58 3 21 5.42 21 8.5C21 14 12 21 12 21Z" /></Svg>;
+    {return <Svg {...p}><Path d="M12 21C12 21 3 14 3 8.5C3 5.42 5.42 3 8.5 3C10.24 3 11.91 3.81 12 5C12.09 3.81 13.76 3 15.5 3C18.58 3 21 5.42 21 8.5C21 14 12 21 12 21Z" /></Svg>;}
   if (lower === 'bench')
-    return <Svg {...p}><Path d="M4 12h16M4 8h16" /><Path d="M6 12v4M18 12v4M6 8V6M18 8V6" /></Svg>;
+    {return <Svg {...p}><Path d="M4 12h16M4 8h16" /><Path d="M6 12v4M18 12v4M6 8V6M18 8V6" /></Svg>;}
   if (lower === 'library')
-    return <Svg {...p}><Path d="M4 19.5v-15A2.5 2.5 0 016.5 2H20v20H6.5a2.5 2.5 0 010-5H20" /></Svg>;
+    {return <Svg {...p}><Path d="M4 19.5v-15A2.5 2.5 0 016.5 2H20v20H6.5a2.5 2.5 0 010-5H20" /></Svg>;}
   if (lower === 'transit')
-    return <Svg {...p}><Rect x="4" y="3" width="16" height="14" rx="2" /><Path d="M4 10h16" /><Path d="M12 3v7" /><Circle cx="7.5" cy="20" r="1.5" fill={color} /><Circle cx="16.5" cy="20" r="1.5" fill={color} /><Path d="M4 17h16" /></Svg>;
+    {return <Svg {...p}><Rect x="4" y="3" width="16" height="14" rx="2" /><Path d="M4 10h16" /><Path d="M12 3v7" /><Circle cx="7.5" cy="20" r="1.5" fill={color} /><Circle cx="16.5" cy="20" r="1.5" fill={color} /><Path d="M4 17h16" /></Svg>;}
   if (lower.startsWith('va_'))
-    return <Svg {...p}><Path d="M12 2l2.9 5.9 6.5.9-4.7 4.6 1.1 6.5L12 17l-5.8 2.9 1.1-6.5L2.6 8.8l6.5-.9L12 2z" /></Svg>;
+    {return <Svg {...p}><Path d="M12 2l2.9 5.9 6.5.9-4.7 4.6 1.1 6.5L12 17l-5.8 2.9 1.1-6.5L2.6 8.8l6.5-.9L12 2z" /></Svg>;}
   if (lower.startsWith('usda'))
-    return <Svg {...p}><Path d="M17 8C8 10 5.9 16.2 3.8 19.6" /><Path d="M20.5 4.5C16.5 3 6 5.5 3 19c2.5-2.5 6-4 10-4 3 0 5.5.5 7.5 1.5C21 12 20.5 4.5 20.5 4.5Z" /></Svg>;
+    {return <Svg {...p}><Path d="M17 8C8 10 5.9 16.2 3.8 19.6" /><Path d="M20.5 4.5C16.5 3 6 5.5 3 19c2.5-2.5 6-4 10-4 3 0 5.5.5 7.5 1.5C21 12 20.5 4.5 20.5 4.5Z" /></Svg>;}
   if (lower === 'mental_health')
-    return <Svg {...p}><Path d="M12 21C12 21 3 14 3 8.5C3 5.42 5.42 3 8.5 3C10.24 3 11.91 3.81 12 5C12.09 3.81 13.76 3 15.5 3C18.58 3 21 5.42 21 8.5C21 14 12 21 12 21Z" /></Svg>;
+    {return <Svg {...p}><Path d="M12 21C12 21 3 14 3 8.5C3 5.42 5.42 3 8.5 3C10.24 3 11.91 3.81 12 5C12.09 3.81 13.76 3 15.5 3C18.58 3 21 5.42 21 8.5C21 14 12 21 12 21Z" /></Svg>;}
   // default: generic circle
   return <Svg {...p}><Circle cx="12" cy="12" r="9" /></Svg>;
 };
@@ -166,13 +161,10 @@ const SEARCH_SYNONYMS: Record<string, string[]> = {
   usda: ['usda_facility', 'usda_rural_development_office', 'usda_snap_office', 'usda_farm_service_center', 'usda_extension_office', 'usda_wic_office'], farm: ['usda_farm_service_center'],
 };
 
-const AnimatedPressable = Animated.createAnimatedComponent(Pressable);
-
 const SearchScreen: React.FC = () => {
   const { t } = useTranslation();
   const insets = useSafeAreaInsets();
   const { isDarkMode } = useThemeStore();
-  const customTheme = useCustomTheme();
   const theme = isDarkMode ? colors.dark : colors.light;
   const { userLocation } = useLocationStore();
   const { utilities } = useUtilityStore();
@@ -198,7 +190,7 @@ const SearchScreen: React.FC = () => {
     setSelectedFilters(prev =>
       prev.includes(key)
         ? prev.filter(f => f !== key)
-        : [...prev, key]
+        : [...prev, key],
     );
   }, []);
 
@@ -208,11 +200,11 @@ const SearchScreen: React.FC = () => {
 
   // Build the set of matching categories from selected filter chips
   const filterCategorySet = useMemo(() => {
-    if (selectedFilters.length === 0) return null;
+    if (selectedFilters.length === 0) {return null;}
     const cats = new Set<string>();
     for (const key of selectedFilters) {
       const filter = UTILITY_TYPES.find(f => f.key === key);
-      if (filter) filter.categories.forEach(c => cats.add(c));
+      if (filter) {filter.categories.forEach(c => cats.add(c));}
     }
     return cats;
   }, [selectedFilters]);
@@ -228,7 +220,7 @@ const SearchScreen: React.FC = () => {
       const synonymCategories = new Set<string>();
       for (const word of words) {
         const matches = SEARCH_SYNONYMS[word];
-        if (matches) matches.forEach((c) => synonymCategories.add(c));
+        if (matches) {matches.forEach((c) => synonymCategories.add(c));}
       }
 
       result = result.filter((u) => {
@@ -271,7 +263,7 @@ const SearchScreen: React.FC = () => {
           userLocation.latitude,
           userLocation.longitude,
           item.latitude,
-          item.longitude
+          item.longitude,
         )
       : null;
 
@@ -294,7 +286,7 @@ const SearchScreen: React.FC = () => {
                   ? `${utilityColor.primary}25`
                   : `${utilityColor.primary}15`,
                 borderColor: `${utilityColor.primary}30`,
-              }
+              },
             ]}>
               <CategoryIcon category={utilityType} color={utilityColor.primary} size={22} />
             </View>
@@ -523,7 +515,7 @@ const SearchScreen: React.FC = () => {
                     color: isActive
                       ? '#FFFFFF'
                       : isDarkMode ? 'rgba(255,255,255,0.7)' : theme.text.secondary,
-                  }
+                  },
                 ]}>
                   {type.label}
                 </Text>
@@ -570,7 +562,7 @@ const SearchScreen: React.FC = () => {
           onDismiss={() => setIsFilterModalVisible(false)}
           contentContainerStyle={[
             styles.modalContainer,
-            { backgroundColor: isDarkMode ? colors.dark.surface : colors.light.surface }
+            { backgroundColor: isDarkMode ? colors.dark.surface : colors.light.surface },
           ]}
         >
           <Text style={[styles.modalTitle, { color: theme.text.primary }]}>
@@ -603,7 +595,7 @@ const SearchScreen: React.FC = () => {
                   />
                   <Text style={[
                     styles.filterOptionLabel,
-                    { color: isSelected ? '#FFFFFF' : theme.text.primary }
+                    { color: isSelected ? '#FFFFFF' : theme.text.primary },
                   ]}>
                     {type.label}
                   </Text>

@@ -1,6 +1,6 @@
 import React, { useEffect, useState, useCallback, useRef } from 'react';
 import { View, StyleSheet, AppState } from 'react-native';
-import { Text, useTheme, ActivityIndicator, Chip, Divider } from 'react-native-paper';
+import { Text, useTheme, Chip, Divider } from 'react-native-paper';
 import { TransitArrival, TransitStopInfo } from '../types/utility';
 import { apiService } from '../services/apiService';
 
@@ -20,7 +20,7 @@ const TransitArrivalsComponent: React.FC<TransitArrivalsProps> = ({ utilityId })
   const appStateRef = useRef(AppState.currentState);
 
   const fetchArrivals = useCallback(async (showLoader = false) => {
-    if (showLoader) setLoading(true);
+    if (showLoader) {setLoading(true);}
     setError(null);
     try {
       const data = await apiService.getTransitArrivals(utilityId);
@@ -28,7 +28,7 @@ const TransitArrivalsComponent: React.FC<TransitArrivalsProps> = ({ utilityId })
     } catch {
       setError('Could not load arrival times');
     } finally {
-      if (showLoader) setLoading(false);
+      if (showLoader) {setLoading(false);}
     }
   }, [utilityId]);
 
@@ -54,7 +54,7 @@ const TransitArrivalsComponent: React.FC<TransitArrivalsProps> = ({ utilityId })
   // Auto-refresh every 30s (pauses when app backgrounded)
   useEffect(() => {
     const startInterval = () => {
-      if (intervalRef.current) clearInterval(intervalRef.current);
+      if (intervalRef.current) {clearInterval(intervalRef.current);}
       intervalRef.current = setInterval(() => fetchArrivals(false), REFRESH_INTERVAL_MS);
     };
 
@@ -63,14 +63,14 @@ const TransitArrivalsComponent: React.FC<TransitArrivalsProps> = ({ utilityId })
         fetchArrivals(false);
         startInterval();
       } else if (nextState.match(/inactive|background/)) {
-        if (intervalRef.current) clearInterval(intervalRef.current);
+        if (intervalRef.current) {clearInterval(intervalRef.current);}
       }
       appStateRef.current = nextState;
     });
 
     startInterval();
     return () => {
-      if (intervalRef.current) clearInterval(intervalRef.current);
+      if (intervalRef.current) {clearInterval(intervalRef.current);}
       sub.remove();
     };
   }, [fetchArrivals]);

@@ -7,7 +7,6 @@ import {
   StatusBar,
   TextInput,
   TouchableOpacity,
-  Platform,
   Keyboard,
   Modal,
 } from 'react-native';
@@ -15,10 +14,9 @@ import { useFocusEffect } from '@react-navigation/native';
 import {
   Portal,
   Text,
-  IconButton,
 } from 'react-native-paper';
 import MapView, { Marker, PROVIDER_GOOGLE, Region } from 'react-native-maps';
-import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useTranslation } from 'react-i18next';
 import { BlurView } from 'expo-blur';
 import { LinearGradient } from 'expo-linear-gradient';
@@ -32,17 +30,16 @@ import Animated, {
   runOnJS,
 } from 'react-native-reanimated';
 
-import { useThemeStore, useCustomTheme } from '../stores/themeStore';
+import { useThemeStore } from '../stores/themeStore';
 import { useLocationStore } from '../stores/locationStore';
 import { useUtilityStore } from '../stores/utilityStore';
-import { FilterModal } from '../components/FilterModal';
 import { UtilityDetails } from '../components/UtilityDetails';
 import { Utility } from '../types/utility';
 import { UtilityMarker } from '../components/UtilityMarker';
 import { getMarkerImage } from '../utils/markerImages';
 import { requestLocationPermission } from '../utils/permissions';
 
-import Svg, { Line, Circle, Path, Rect, G } from 'react-native-svg';
+import Svg, { Line, Circle, Path, Rect } from 'react-native-svg';
 import { apiService } from '../services/apiService';
 import { GradientButton, Chip } from '../components/ui';
 import { colors } from '../theme/colors';
@@ -60,7 +57,7 @@ interface WelcomeBackOverlayProps {
   fillDurationMs?: number;   // duration for main progress fill on UI thread
 }
 
-const WelcomeBackOverlay = React.memo(({ visible, isDarkMode, progress, statusText, fillDurationMs }: WelcomeBackOverlayProps) => {
+const WelcomeBackOverlay = React.memo(({ visible, isDarkMode: _isDarkMode, progress, statusText, fillDurationMs }: WelcomeBackOverlayProps) => {
   const animatedProgress = useSharedValue(0);
   const fadeOpacity = useSharedValue(1);
   const [shouldRender, setShouldRender] = React.useState(visible);
@@ -81,6 +78,7 @@ const WelcomeBackOverlay = React.memo(({ visible, isDarkMode, progress, statusTe
       duration: progress >= 1.0 ? (fillDurationMs ?? 3000) : 300,
       easing: Easing.out(Easing.cubic),
     });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [progress, fillDurationMs]);
 
   // Fade-out when loading completes, then unmount
@@ -90,9 +88,10 @@ const WelcomeBackOverlay = React.memo(({ visible, isDarkMode, progress, statusTe
       fadeOpacity.value = 1;
     } else {
       fadeOpacity.value = withTiming(0, { duration: 400, easing: Easing.in(Easing.cubic) }, (finished) => {
-        if (finished) runOnJS(setShouldRender)(false);
+        if (finished) {runOnJS(setShouldRender)(false);}
       });
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [visible]);
 
   const progressBarStyle = useAnimatedStyle(() => ({
@@ -103,7 +102,7 @@ const WelcomeBackOverlay = React.memo(({ visible, isDarkMode, progress, statusTe
     opacity: fadeOpacity.value,
   }));
 
-  if (!shouldRender) return null;
+  if (!shouldRender) {return null;}
 
   return (
     <Modal visible={true} transparent animationType="none" statusBarTranslucent>
@@ -291,7 +290,7 @@ const VIEWPORT_BUFFER = 0.8;
 const FILTER_CATEGORY_MAP = new Map<string, Set<string>>(
   UTILITY_FILTERS
     .filter(f => f.categories)
-    .map(f => [f.key, new Set(f.categories!)])
+    .map(f => [f.key, new Set(f.categories!)]),
 );
 
 // Maps common everyday search terms → matching category/type values.
@@ -422,8 +421,7 @@ const SEARCH_SYNONYMS: Record<string, string[]> = {
 const MapScreen: React.FC = () => {
   const { t } = useTranslation();
   const insets = useSafeAreaInsets();
-  const { currentTheme, isDarkMode } = useThemeStore();
-  const customTheme = useCustomTheme();
+  const { isDarkMode } = useThemeStore();
   const { currentLocation, getCurrentLocation, hasLocationPermission, setLocationPermission } = useLocationStore();
   const { utilities, isLoading, setLoading, setUtilities } = useUtilityStore();
 
@@ -442,7 +440,6 @@ const MapScreen: React.FC = () => {
   // while the heavy marker re-render uses this deferred value so the UI
   // stays responsive during the first filter tap (~3400 marker unmounts).
   const deferredFilter = useDeferredValue(activeFilter);
-  const [isSearchFocused, setIsSearchFocused] = useState(false);
   // Viewport culling: track the visible map region so we only render nearby markers.
   // Initialized from currentLocation so culling is active from the first frame.
   const [mapRegion, setMapRegion] = useState<Region | null>(
@@ -451,7 +448,7 @@ const MapScreen: React.FC = () => {
       longitude: currentLocation.longitude,
       latitudeDelta: 0.05,
       longitudeDelta: 0.05,
-    } : null
+    } : null,
   );
   const initialFetchDone = useRef(false);
   const fetchInProgress = useRef(false);
@@ -474,11 +471,12 @@ const MapScreen: React.FC = () => {
 
   useEffect(() => {
     initializeMap();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [hasLocationPermission]);
 
   // Fetch ALL utilities statewide — single call, loads every pin at once.
   const fetchAllUtilities = useCallback(async (loc?: { latitude: number; longitude: number }) => {
-    if (fetchInProgress.current) return;
+    if (fetchInProgress.current) {return;}
     fetchInProgress.current = true;
     setLoading(true);
     try {
@@ -509,7 +507,7 @@ const MapScreen: React.FC = () => {
 
   // Initial fetch — fires ONCE on mount, loads ALL WA utilities
   useEffect(() => {
-    if (initialFetchDone.current) return;
+    if (initialFetchDone.current) {return;}
     initialFetchDone.current = true;
     fetchAllUtilities();
   }, [fetchAllUtilities]);
@@ -550,7 +548,7 @@ const MapScreen: React.FC = () => {
       }, 3000);
 
       return () => clearTimeout(retryTimer);
-    }, [fetchAllUtilities])
+    }, [fetchAllUtilities]),
   );
 
   // Center map on user location once it becomes available for the first time.
@@ -604,7 +602,7 @@ const MapScreen: React.FC = () => {
     const query = searchQuery.trim();
     setCommittedSearch(query);
 
-    if (!query) return;
+    if (!query) {return;}
 
     // Pre-compute results for map animation (same logic as filteredUtilities)
     const lowerQuery = query.toLowerCase();
@@ -612,7 +610,7 @@ const MapScreen: React.FC = () => {
     const synonymCategories = new Set<string>();
     for (const word of words) {
       const matches = SEARCH_SYNONYMS[word];
-      if (matches) matches.forEach((c) => synonymCategories.add(c));
+      if (matches) {matches.forEach((c) => synonymCategories.add(c));}
     }
     const results = utilities.filter((u) => {
       if (synonymCategories.size > 0) {
@@ -661,7 +659,7 @@ const MapScreen: React.FC = () => {
     if (!hasLocationPermission) {
       Alert.alert(
         t('location_permission_required'),
-        t('location_permission_message')
+        t('location_permission_message'),
       );
       return;
     }
@@ -704,7 +702,7 @@ const MapScreen: React.FC = () => {
       setMapRegion(region);
       return;
     }
-    if (regionDebounceRef.current) clearTimeout(regionDebounceRef.current);
+    if (regionDebounceRef.current) {clearTimeout(regionDebounceRef.current);}
     regionDebounceRef.current = setTimeout(() => {
       setMapRegion(region);
     }, 300);
@@ -726,7 +724,7 @@ const MapScreen: React.FC = () => {
       const synonymCategories = new Set<string>();
       for (const word of words) {
         const matches = SEARCH_SYNONYMS[word];
-        if (matches) matches.forEach((c) => synonymCategories.add(c));
+        if (matches) {matches.forEach((c) => synonymCategories.add(c));}
       }
 
       result = result.filter((u) => {
@@ -745,7 +743,7 @@ const MapScreen: React.FC = () => {
       if (matchSet) {
         result = result.filter(u =>
           matchSet.has(u.category?.toLowerCase()) ||
-          (u.type && matchSet.has(u.type.toLowerCase()))
+          (u.type && matchSet.has(u.type.toLowerCase())),
         );
       }
     }
@@ -774,7 +772,7 @@ const MapScreen: React.FC = () => {
 
   // setTimeout chain: mount MOUNT_BATCH per tick
   useEffect(() => {
-    if (mountedCount >= utilities.length) return;
+    if (mountedCount >= utilities.length) {return;}
     const timer = setTimeout(() => {
       setMountedCount(prev => Math.min(prev + MOUNT_BATCH, utilities.length));
     }, MOUNT_INTERVAL);
@@ -783,14 +781,14 @@ const MapScreen: React.FC = () => {
 
   const visibleUtilities = useMemo(
     () => utilities.slice(0, mountedCount),
-    [utilities, mountedCount]
+    [utilities, mountedCount],
   );
 
   // O(1) per-marker filter check — null means everything matches.
   // Uses deferredFilter so this recomputes on the deferred render pass,
   // keeping the chip highlight instant while markers update asynchronously.
   const matchingFilterIds = useMemo(() => {
-    if (deferredFilter === 'all' && !committedSearch) return null;
+    if (deferredFilter === 'all' && !committedSearch) {return null;}
     return new Set(filteredUtilities.map(u => u.id));
   }, [filteredUtilities, deferredFilter, committedSearch]);
 
@@ -799,7 +797,7 @@ const MapScreen: React.FC = () => {
   // At city zoom (~0.05° delta), this covers ~0.1° total — plenty to
   // prevent visible pop-in during normal panning.
   const viewportBounds = useMemo(() => {
-    if (!mapRegion) return null;
+    if (!mapRegion) {return null;}
     const latHalf = mapRegion.latitudeDelta * (0.5 + VIEWPORT_BUFFER);
     const lngHalf = mapRegion.longitudeDelta * (0.5 + VIEWPORT_BUFFER);
     return {
@@ -821,7 +819,7 @@ const MapScreen: React.FC = () => {
         u.latitude >= viewportBounds.minLat &&
         u.latitude <= viewportBounds.maxLat &&
         u.longitude >= viewportBounds.minLng &&
-        u.longitude <= viewportBounds.maxLng
+        u.longitude <= viewportBounds.maxLng,
       );
     }
 
@@ -860,8 +858,8 @@ const MapScreen: React.FC = () => {
     const batchSize = initialLoadCompleteRef.current ? RENDER_BATCH : INITIAL_RENDER_BATCH;
     let added = 0;
     for (const m of markersToRender) {
-      if (renderedIdsRef.current.size >= MAX_RENDERED) break;
-      if (added >= batchSize) break;
+      if (renderedIdsRef.current.size >= MAX_RENDERED) {break;}
+      if (added >= batchSize) {break;}
       if (!renderedIdsRef.current.has(m.id)) {
         renderedIdsRef.current.add(m.id);
         added++;
@@ -869,26 +867,26 @@ const MapScreen: React.FC = () => {
       }
     }
 
-    if (changed) setRenderTick(t => t + 1);
+    if (changed) {setRenderTick(prev => prev + 1);}
   }, [markersToRender]);
 
   // Growth timer — continue adding new markers in batches
   useEffect(() => {
     const target = Math.min(markersToRender.length, MAX_RENDERED);
-    if (renderedIdsRef.current.size >= target) return;
+    if (renderedIdsRef.current.size >= target) {return;}
 
     const timer = setTimeout(() => {
       const batchSize = initialLoadCompleteRef.current ? RENDER_BATCH : INITIAL_RENDER_BATCH;
       let added = 0;
       for (const m of markersToRender) {
-        if (renderedIdsRef.current.size >= MAX_RENDERED) break;
-        if (added >= batchSize) break;
+        if (renderedIdsRef.current.size >= MAX_RENDERED) {break;}
+        if (added >= batchSize) {break;}
         if (!renderedIdsRef.current.has(m.id)) {
           renderedIdsRef.current.add(m.id);
           added++;
         }
       }
-      if (added > 0) setRenderTick(t => t + 1);
+      if (added > 0) {setRenderTick(prev => prev + 1);}
     }, MOUNT_INTERVAL);
 
     return () => clearTimeout(timer);
@@ -899,7 +897,8 @@ const MapScreen: React.FC = () => {
   // On zoom-in: out-of-viewport markers are excluded immediately.
   const finalMarkers = useMemo(
     () => markersToRender.filter(m => renderedIdsRef.current.has(m.id)),
-    [markersToRender, renderTick]
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [markersToRender, renderTick],
   );
 
   // Loading overlay — shown during initial data fetch + progressive mount only.
@@ -940,7 +939,7 @@ const MapScreen: React.FC = () => {
 
   // Two-phase progress: 10% during API fetch → 100% when data ready (overlay animates the fill)
   const loadingProgress = useMemo(() => {
-    if (isLoading) return 0.1;  // API fetch phase
+    if (isLoading) {return 0.1;}  // API fetch phase
     return 1.0;                 // Data ready — overlay fills over fillDurationMs
   }, [isLoading]);
 
@@ -951,7 +950,7 @@ const MapScreen: React.FC = () => {
   // Cleanup debounce timer on unmount
   useEffect(() => {
     return () => {
-      if (regionDebounceRef.current) clearTimeout(regionDebounceRef.current);
+      if (regionDebounceRef.current) {clearTimeout(regionDebounceRef.current);}
     };
   }, []);
 
@@ -971,7 +970,7 @@ const MapScreen: React.FC = () => {
         opacity={0.5}
       />
     ),
-    []
+    [],
   );
 
   // Permission screen
@@ -1079,8 +1078,6 @@ const MapScreen: React.FC = () => {
               value={searchQuery}
               onChangeText={setSearchQuery}
               onSubmitEditing={handleSearch}
-              onFocus={() => setIsSearchFocused(true)}
-              onBlur={() => setIsSearchFocused(false)}
               returnKeyType="search"
             />
             {searchQuery.length > 0 && (

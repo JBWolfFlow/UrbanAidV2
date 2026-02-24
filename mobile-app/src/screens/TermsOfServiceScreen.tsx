@@ -64,7 +64,7 @@ const TermsOfServiceScreen: React.FC<TermsOfServiceScreenProps> = ({ navigation 
         style={styles.scrollView}
         contentContainerStyle={[
           styles.content,
-          { paddingBottom: insets.bottom + tokens.spacing.xl }
+          { paddingBottom: insets.bottom + tokens.spacing.xl },
         ]}
         showsVerticalScrollIndicator={false}
       >

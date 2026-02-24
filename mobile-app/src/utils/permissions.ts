@@ -33,7 +33,7 @@ const requestAndroidLocationPermission = async (): Promise<boolean> => {
         buttonNeutral: 'Ask Me Later',
         buttonNegative: 'Cancel',
         buttonPositive: 'OK',
-      }
+      },
     );
 
     if (granted === PermissionsAndroid.RESULTS.GRANTED) {
@@ -57,7 +57,7 @@ const requestAndroidLocationPermission = async (): Promise<boolean> => {
 const requestIOSLocationPermission = async (): Promise<boolean> => {
   try {
     const result = await request(PERMISSIONS.IOS.LOCATION_WHEN_IN_USE);
-    
+
     switch (result) {
       case RESULTS.GRANTED:
         return true;
@@ -86,7 +86,7 @@ export const checkLocationPermission = async (): Promise<boolean> => {
   try {
     if (Platform.OS === 'android') {
       const result = await PermissionsAndroid.check(
-        PermissionsAndroid.PERMISSIONS.ACCESS_FINE_LOCATION
+        PermissionsAndroid.PERMISSIONS.ACCESS_FINE_LOCATION,
       );
       return result === true;
     } else {
@@ -118,7 +118,7 @@ const showLocationPermissionAlert = (): void => {
           Linking.openSettings();
         },
       },
-    ]
+    ],
   );
 };
 
@@ -137,7 +137,7 @@ export const requestCameraPermission = async (): Promise<boolean> => {
           buttonNeutral: 'Ask Me Later',
           buttonNegative: 'Cancel',
           buttonPositive: 'OK',
-        }
+        },
       );
       return granted === PermissionsAndroid.RESULTS.GRANTED;
     } else {
@@ -165,7 +165,7 @@ export const requestPhotoLibraryPermission = async (): Promise<boolean> => {
           buttonNeutral: 'Ask Me Later',
           buttonNegative: 'Cancel',
           buttonPositive: 'OK',
-        }
+        },
       );
       return granted === PermissionsAndroid.RESULTS.GRANTED;
     } else {
@@ -176,4 +176,4 @@ export const requestPhotoLibraryPermission = async (): Promise<boolean> => {
     console.error('Error requesting photo library permission:', error);
     return false;
   }
-}; 
+};

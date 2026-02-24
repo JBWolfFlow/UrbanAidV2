@@ -278,11 +278,11 @@ export const nationalRestrooms = [
 ];
 
 // Add description and address to each restroom
-export const enhancedNationalRestrooms = nationalRestrooms.map((restroom, index) => ({
+export const enhancedNationalRestrooms = nationalRestrooms.map((restroom) => ({
   ...restroom,
   description: `Public restroom facility with ${restroom.accessibility ? 'full accessibility features' : 'standard amenities'}`,
   address: `${restroom.title} area`,
   verified: true,
   is24Hours: Math.random() > 0.7, // 30% are 24/7
   icon: '🚻',
-})); 
+}));

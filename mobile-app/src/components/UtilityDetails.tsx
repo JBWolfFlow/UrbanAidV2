@@ -115,15 +115,15 @@ const UtilityDetailsComponent: React.FC<UtilityDetailsProps> = ({
   const renderRating = () => {
     const stars = [];
     const rating = utility.rating || 0;
-    
+
     for (let i = 1; i <= 5; i++) {
       stars.push(
         <Text key={i} style={styles.star}>
           {i <= rating ? '⭐' : '☆'}
-        </Text>
+        </Text>,
       );
     }
-    
+
     return (
       <View style={styles.ratingContainer}>
         <View style={styles.stars}>{stars}</View>
@@ -205,7 +205,7 @@ const UtilityDetailsComponent: React.FC<UtilityDetailsProps> = ({
           <>
             <Divider style={styles.divider} />
             <Title style={styles.sectionTitle}>Information</Title>
-            
+
             {utility.address && (
               <List.Item
                 title="Address"
@@ -213,7 +213,7 @@ const UtilityDetailsComponent: React.FC<UtilityDetailsProps> = ({
                 left={() => <List.Icon icon="map-marker" />}
               />
             )}
-            
+
             {utility.phone && (
               <List.Item
                 title="Phone"
@@ -222,7 +222,7 @@ const UtilityDetailsComponent: React.FC<UtilityDetailsProps> = ({
                 onPress={handleCall}
               />
             )}
-            
+
             {utility.website && (
               <List.Item
                 title="Website"
@@ -367,4 +367,4 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     paddingBottom: 8,
   },
-}); 
+});

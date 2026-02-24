@@ -20,15 +20,13 @@ import Animated, {
 import { LinearGradient } from 'expo-linear-gradient';
 import { BlurView } from 'expo-blur';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import Svg, { Path, Circle, Rect, G } from 'react-native-svg';
+import Svg, { Path, Circle, Rect } from 'react-native-svg';
 
 import { tokens } from '../theme/tokens';
-import { colors } from '../theme/colors';
 import { GradientButton } from '../components/ui/GradientButton';
 import { useOnboardingStore } from '../stores/onboardingStore';
 
 const { width: SCREEN_WIDTH, height: SCREEN_HEIGHT } = Dimensions.get('window');
-const SLIDE_COUNT = 3;
 
 // ─── Inline SVG Icons ────────────────────────────────────────────────────────
 
@@ -208,17 +206,18 @@ const FloatingShape = ({
       withRepeat(
         withTiming(driftX, { duration: 4000, easing: Easing.inOut(Easing.ease) }),
         -1,
-        true
-      )
+        true,
+      ),
     );
     translateY.value = withDelay(
       delay,
       withRepeat(
         withTiming(driftY, { duration: 5000, easing: Easing.inOut(Easing.ease) }),
         -1,
-        true
-      )
+        true,
+      ),
     );
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   const animatedStyle = useAnimatedStyle(() => ({
@@ -309,34 +308,36 @@ const featureStyles = StyleSheet.create({
 
 // ─── Dot Indicator ───────────────────────────────────────────────────────────
 
+const AnimatedDot = ({ scrollX, index }: { scrollX: Animated.SharedValue<number>; index: number }) => {
+  const animatedDot = useAnimatedStyle(() => {
+    const inputRange = [
+      (index - 1) * SCREEN_WIDTH,
+      index * SCREEN_WIDTH,
+      (index + 1) * SCREEN_WIDTH,
+    ];
+    const width = interpolate(
+      scrollX.value,
+      inputRange,
+      [8, 24, 8],
+      Extrapolation.CLAMP,
+    );
+    const opacity = interpolate(
+      scrollX.value,
+      inputRange,
+      [0.3, 1, 0.3],
+      Extrapolation.CLAMP,
+    );
+    return { width, opacity };
+  });
+
+  return <Animated.View style={[dotStyles.dot, animatedDot]} />;
+};
+
 const DotIndicator = ({ scrollX }: { scrollX: Animated.SharedValue<number> }) => (
   <View style={dotStyles.container}>
-    {slides.map((_, i) => {
-      const animatedDot = useAnimatedStyle(() => {
-        const inputRange = [
-          (i - 1) * SCREEN_WIDTH,
-          i * SCREEN_WIDTH,
-          (i + 1) * SCREEN_WIDTH,
-        ];
-        const width = interpolate(
-          scrollX.value,
-          inputRange,
-          [8, 24, 8],
-          Extrapolation.CLAMP
-        );
-        const opacity = interpolate(
-          scrollX.value,
-          inputRange,
-          [0.3, 1, 0.3],
-          Extrapolation.CLAMP
-        );
-        return { width, opacity };
-      });
-
-      return (
-        <Animated.View key={i} style={[dotStyles.dot, animatedDot]} />
-      );
-    })}
+    {slides.map((_, i) => (
+      <AnimatedDot key={i} scrollX={scrollX} index={i} />
+    ))}
   </View>
 );
 
@@ -374,7 +375,7 @@ const OnboardingScreen = () => {
       scrollX.value,
       [SCREEN_WIDTH * 1.2, SCREEN_WIDTH * 1.8],
       [1, 0],
-      Extrapolation.CLAMP
+      Extrapolation.CLAMP,
     );
     return { opacity };
   });
@@ -385,13 +386,13 @@ const OnboardingScreen = () => {
       scrollX.value,
       [SCREEN_WIDTH * 1.5, SCREEN_WIDTH * 2],
       [0, 1],
-      Extrapolation.CLAMP
+      Extrapolation.CLAMP,
     );
     const translateY = interpolate(
       scrollX.value,
       [SCREEN_WIDTH * 1.5, SCREEN_WIDTH * 2],
       [40, 0],
-      Extrapolation.CLAMP
+      Extrapolation.CLAMP,
     );
     return { opacity, transform: [{ translateY }] };
   });
@@ -489,13 +490,13 @@ const SlideView = ({
       scrollX.value,
       [baseOffset - SCREEN_WIDTH, baseOffset, baseOffset + SCREEN_WIDTH],
       [SCREEN_WIDTH * 0.3, 0, -SCREEN_WIDTH * 0.3],
-      Extrapolation.CLAMP
+      Extrapolation.CLAMP,
     );
     const opacity = interpolate(
       scrollX.value,
       [baseOffset - SCREEN_WIDTH * 0.6, baseOffset, baseOffset + SCREEN_WIDTH * 0.6],
       [0, 1, 0],
-      Extrapolation.CLAMP
+      Extrapolation.CLAMP,
     );
     return { transform: [{ translateX }], opacity };
   });
@@ -505,13 +506,13 @@ const SlideView = ({
       scrollX.value,
       [baseOffset - SCREEN_WIDTH, baseOffset, baseOffset + SCREEN_WIDTH],
       [SCREEN_WIDTH * 0.2, 0, -SCREEN_WIDTH * 0.2],
-      Extrapolation.CLAMP
+      Extrapolation.CLAMP,
     );
     const opacity = interpolate(
       scrollX.value,
       [baseOffset - SCREEN_WIDTH * 0.6, baseOffset, baseOffset + SCREEN_WIDTH * 0.6],
       [0, 1, 0],
-      Extrapolation.CLAMP
+      Extrapolation.CLAMP,
     );
     return { transform: [{ translateX }], opacity };
   });
@@ -521,13 +522,13 @@ const SlideView = ({
       scrollX.value,
       [baseOffset - SCREEN_WIDTH, baseOffset, baseOffset + SCREEN_WIDTH],
       [SCREEN_WIDTH * 0.15, 0, -SCREEN_WIDTH * 0.15],
-      Extrapolation.CLAMP
+      Extrapolation.CLAMP,
     );
     const opacity = interpolate(
       scrollX.value,
       [baseOffset - SCREEN_WIDTH * 0.6, baseOffset, baseOffset + SCREEN_WIDTH * 0.6],
       [0, 1, 0],
-      Extrapolation.CLAMP
+      Extrapolation.CLAMP,
     );
     return { transform: [{ translateX }], opacity };
   });

@@ -20,7 +20,6 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { BottomTabBarProps } from '@react-navigation/bottom-tabs';
 import Animated, {
   useSharedValue,
-  useAnimatedStyle,
   withSpring,
 } from 'react-native-reanimated';
 import { Icon } from 'react-native-paper';
@@ -60,6 +59,7 @@ export const GlassTabBar: React.FC<BottomTabBarProps> = ({
   // Update indicator when tab changes
   React.useEffect(() => {
     indicatorPosition.value = withSpring(state.index, SPRING_CONFIG);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [state.index]);
 
   // Completely transparent — icons float with no visible background

@@ -17,11 +17,9 @@ module.exports = {
     'react-native/react-native': true,
   },
   rules: {
-    // Disable some rules that might be too strict for development
     '@typescript-eslint/no-unused-vars': 'warn',
-    'react-native/no-inline-styles': 'warn',
-    'react/no-unstable-nested-components': 'warn',
-    // Allow console.log in development
+    'react-native/no-inline-styles': 'off',
+    'react/no-unstable-nested-components': ['warn', { allowAsProps: true }],
     'no-console': 'off',
   },
   overrides: [

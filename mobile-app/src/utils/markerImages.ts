@@ -122,7 +122,7 @@ const categoryCache = new Map<string, ImageRequireSource>();
  */
 export function getMarkerImage(category: string): ImageRequireSource {
   const cached = categoryCache.get(category);
-  if (cached) return cached;
+  if (cached) {return cached;}
 
   const lower = category.toLowerCase().replace(/[\s-]/g, '_');
 
@@ -131,15 +131,15 @@ export function getMarkerImage(category: string): ImageRequireSource {
 
   // Prefix matching for grouped categories
   if (!img) {
-    if (lower.startsWith('va_')) img = imageByCategory.va_facility;
-    else if (lower.startsWith('usda_')) img = imageByCategory.usda;
+    if (lower.startsWith('va_')) {img = imageByCategory.va_facility;}
+    else if (lower.startsWith('usda_')) {img = imageByCategory.usda;}
     else if (lower.includes('health_center') || lower.startsWith('community_health') ||
              lower.startsWith('migrant_health') || lower.startsWith('homeless_health') ||
              lower.startsWith('public_housing_health') || lower.startsWith('school_based_health') ||
-             lower.startsWith('federally_qualified')) img = imageByCategory.health_center;
-    else if (lower === 'safe_injection') img = imageByCategory.needle_exchange;
+             lower.startsWith('federally_qualified')) {img = imageByCategory.health_center;}
+    else if (lower === 'safe_injection') {img = imageByCategory.needle_exchange;}
     else if (lower === 'addiction_services' || lower === 'suicide_prevention' ||
-             lower === 'domestic_violence') img = imageByCategory.mental_health;
+             lower === 'domestic_violence') {img = imageByCategory.mental_health;}
   }
 
   const result = img || defaultImage;

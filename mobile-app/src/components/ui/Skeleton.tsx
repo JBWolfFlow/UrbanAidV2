@@ -21,7 +21,6 @@ import Animated, {
   Easing,
 } from 'react-native-reanimated';
 import { LinearGradient } from 'expo-linear-gradient';
-import { colors } from '../../theme/colors';
 import { tokens } from '../../theme/tokens';
 import { useThemeStore } from '../../stores/themeStore';
 
@@ -49,7 +48,6 @@ export const Skeleton: React.FC<SkeletonProps> = ({
   lineSpacing = tokens.spacing.sm,
 }) => {
   const { isDarkMode } = useThemeStore();
-  const theme = isDarkMode ? colors.dark : colors.light;
   const shimmerPosition = useSharedValue(-1);
 
   useEffect(() => {
@@ -60,7 +58,7 @@ export const Skeleton: React.FC<SkeletonProps> = ({
           easing: Easing.linear,
         }),
         -1,
-        false
+        false,
       );
     }
   }, [animated, shimmerPosition]);
@@ -121,7 +119,7 @@ export const Skeleton: React.FC<SkeletonProps> = ({
     const translateX = interpolate(
       shimmerPosition.value,
       [-1, 1],
-      [-SCREEN_WIDTH, SCREEN_WIDTH]
+      [-SCREEN_WIDTH, SCREEN_WIDTH],
     );
 
     return {

@@ -343,7 +343,7 @@ const ProfileScreen: React.FC = () => {
         },
       ],
       'plain-text',
-      username === DEFAULT_USERNAME ? '' : username
+      username === DEFAULT_USERNAME ? '' : username,
     );
   };
 
@@ -370,7 +370,7 @@ const ProfileScreen: React.FC = () => {
           } else if (profileImage && buttonIndex === 2) {
             removeProfileImage();
           }
-        }
+        },
       );
     } else {
       // Android fallback
@@ -382,7 +382,7 @@ const ProfileScreen: React.FC = () => {
           { text: 'Choose from Library', onPress: pickImage },
           ...(profileImage ? [{ text: 'Remove Photo', onPress: removeProfileImage, style: 'destructive' as const }] : []),
           { text: 'Cancel', style: 'cancel' as const },
-        ]
+        ],
       );
     }
   };
@@ -405,8 +405,9 @@ const ProfileScreen: React.FC = () => {
     setIsLanguageModalVisible(false);
     Alert.alert(
       'Language Changed',
-      `Language set to ${languages.find((l) => l.code === languageCode)?.name}`
+      `Language set to ${languages.find((l) => l.code === languageCode)?.name}`,
     );
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   const handleClearCache = useCallback(() => {
@@ -436,6 +437,7 @@ const ProfileScreen: React.FC = () => {
 
   const getSelectedLanguageName = useCallback(() => {
     return languages.find((l) => l.code === selectedLanguage)?.name || 'English';
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [selectedLanguage]);
 
   const renderSectionTitle = (title: string) => (
@@ -634,7 +636,7 @@ const ProfileScreen: React.FC = () => {
             onPress={() =>
               Alert.alert(
                 'About UrbanAid',
-                'UrbanAid helps you find nearby public utilities to make urban living easier and more accessible for everyone.'
+                'UrbanAid helps you find nearby public utilities to make urban living easier and more accessible for everyone.',
               )
             }
             showChevron

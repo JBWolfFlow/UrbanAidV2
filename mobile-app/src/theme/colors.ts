@@ -278,17 +278,17 @@ export function getUtilityColor(type: string): { primary: string; light: string;
 
   // Prefix matching for grouped categories
   const lower = normalizedType as string;
-  if (lower.startsWith('va_')) return colors.utilities.va_facility;
-  if (lower.startsWith('usda_')) return colors.utilities.usda;
+  if (lower.startsWith('va_')) {return colors.utilities.va_facility;}
+  if (lower.startsWith('usda_')) {return colors.utilities.usda;}
   if (lower.includes('health_center') || lower.startsWith('community_health') ||
       lower.startsWith('migrant_health') || lower.startsWith('homeless_health') ||
       lower.startsWith('public_housing_health') || lower.startsWith('school_based_health') ||
-      lower.startsWith('federally_qualified')) return colors.utilities.health;
-  if (lower === 'free_food') return colors.utilities.food;
-  if (lower === 'safe_injection') return colors.utilities.needle_exchange;
-  if (lower === 'hurricane_shelter') return colors.utilities.warming_center;
+      lower.startsWith('federally_qualified')) {return colors.utilities.health;}
+  if (lower === 'free_food') {return colors.utilities.food;}
+  if (lower === 'safe_injection') {return colors.utilities.needle_exchange;}
+  if (lower === 'hurricane_shelter') {return colors.utilities.warming_center;}
   if (lower === 'addiction_services' || lower === 'suicide_prevention' ||
-      lower === 'domestic_violence') return colors.utilities.mental_health;
+      lower === 'domestic_violence') {return colors.utilities.mental_health;}
 
   // Default fallback
   return colors.utilities.water_fountain;

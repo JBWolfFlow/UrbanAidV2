@@ -4,17 +4,6 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import { Utility, UtilityFilter, UtilityCreateData } from '../types/utility';
 import { apiService } from '../services/apiService';
 
-// Debounce utility to prevent rapid updates
-const debounce = <T extends (...args: any[]) => any>(
-  func: T,
-  delay: number
-): ((...args: Parameters<T>) => void) => {
-  let timeoutId: NodeJS.Timeout;
-  return (...args: Parameters<T>) => {
-    clearTimeout(timeoutId);
-    timeoutId = setTimeout(() => func(...args), delay);
-  };
-};
 
 interface UtilityState {
   utilities: Utility[];
@@ -24,7 +13,7 @@ interface UtilityState {
   lastFetchLocation: { latitude: number; longitude: number } | null;
   searchQuery: string;
   activeFilters: Partial<UtilityFilter>;
-  
+
   // Actions
   setUtilities: (utilities: Utility[]) => void;
   mergeUtilities: (newUtilities: Utility[]) => void;
@@ -34,7 +23,7 @@ interface UtilityState {
   setError: (error: string | null) => void;
   setSearchQuery: (query: string) => void;
   setActiveFilters: (filters: Partial<UtilityFilter>) => void;
-  
+
   // API Actions
   fetchNearbyUtilities: (latitude: number, longitude: number, filters?: Partial<UtilityFilter>) => Promise<void>;
   searchUtilities: (query: string, latitude: number, longitude: number) => Promise<void>;
@@ -43,7 +32,7 @@ interface UtilityState {
   deleteUtility: (id: string) => Promise<void>;
   rateUtility: (utilityId: string, rating: number, comment?: string) => Promise<void>;
   reportUtility: (utilityId: string, reason: string, description?: string) => Promise<void>;
-  
+
   // Offline Support
   syncOfflineData: () => Promise<void>;
   clearCache: () => void;
@@ -63,7 +52,7 @@ export const useUtilityStore = create<UtilityState>()(
           radius: 25.0,
           verified_only: false,
           open_now: false,
-          limit: 500
+          limit: 500,
         },
 
         setUtilities: (utilities: Utility[]) => {
@@ -103,7 +92,7 @@ export const useUtilityStore = create<UtilityState>()(
 
         setActiveFilters: (filters: Partial<UtilityFilter>) => {
           set(state => ({
-            activeFilters: { ...state.activeFilters, ...filters }
+            activeFilters: { ...state.activeFilters, ...filters },
           }));
         },
 
@@ -137,7 +126,7 @@ export const useUtilityStore = create<UtilityState>()(
 
         searchUtilities: async (query: string, latitude: number, longitude: number) => {
           const { setLoading, setError, setUtilities } = get();
-          
+
           setLoading(true);
           setError(null);
 
@@ -154,18 +143,18 @@ export const useUtilityStore = create<UtilityState>()(
 
         createUtility: async (utilityData: UtilityCreateData): Promise<Utility | null> => {
           const { setLoading, setError } = get();
-          
+
           setLoading(true);
           setError(null);
 
           try {
             const newUtility = await apiService.createUtility(utilityData);
-            
+
             // Add to local state
             set(state => ({
-              utilities: [...state.utilities, newUtility]
+              utilities: [...state.utilities, newUtility],
             }));
-            
+
             return newUtility;
           } catch (error) {
             console.error('Error creating utility:', error);
@@ -178,18 +167,18 @@ export const useUtilityStore = create<UtilityState>()(
 
         updateUtility: async (id: string, updates: Partial<UtilityCreateData>) => {
           const { setLoading, setError } = get();
-          
+
           setLoading(true);
           setError(null);
 
           try {
             const updatedUtility = await apiService.updateUtility(id, updates);
-            
+
             // Update local state
             set(state => ({
-              utilities: state.utilities.map(utility => 
-                utility.id === id ? updatedUtility : utility
-              )
+              utilities: state.utilities.map(utility =>
+                utility.id === id ? updatedUtility : utility,
+              ),
             }));
           } catch (error) {
             console.error('Error updating utility:', error);
@@ -201,16 +190,16 @@ export const useUtilityStore = create<UtilityState>()(
 
         deleteUtility: async (id: string) => {
           const { setLoading, setError } = get();
-          
+
           setLoading(true);
           setError(null);
 
           try {
             await apiService.deleteUtility(id);
-            
+
             // Remove from local state
             set(state => ({
-              utilities: state.utilities.filter(utility => utility.id !== id)
+              utilities: state.utilities.filter(utility => utility.id !== id),
             }));
           } catch (error) {
             console.error('Error deleting utility:', error);
@@ -223,14 +212,14 @@ export const useUtilityStore = create<UtilityState>()(
         rateUtility: async (utilityId: string, rating: number, comment?: string) => {
           try {
             await apiService.rateUtility(utilityId, rating, comment);
-            
+
             // Update utility rating in local state
             set(state => ({
-              utilities: state.utilities.map(utility => 
-                utility.id === utilityId 
+              utilities: state.utilities.map(utility =>
+                utility.id === utilityId
                   ? { ...utility, rating: rating } // Simplified - should calculate average
-                  : utility
-              )
+                  : utility,
+              ),
             }));
           } catch (error) {
             console.error('Error rating utility:', error);
@@ -258,9 +247,9 @@ export const useUtilityStore = create<UtilityState>()(
             selectedUtility: null,
             error: null,
             lastFetchLocation: null,
-            searchQuery: ''
+            searchQuery: '',
           });
-        }
+        },
       };
     },
     {
@@ -269,6 +258,6 @@ export const useUtilityStore = create<UtilityState>()(
       partialize: (state) => ({
         activeFilters: state.activeFilters,
       }),
-    }
-  )
-); 
+    },
+  ),
+);

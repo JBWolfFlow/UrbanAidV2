@@ -26,7 +26,7 @@ export interface Utility {
   created_by?: string;
 }
 
-export type UtilityCategory = 
+export type UtilityCategory =
   // Basic Infrastructure
   | 'water_fountain'
   | 'restroom'
@@ -45,7 +45,7 @@ export type UtilityCategory =
   // Government Health Services (HRSA)
   | 'health_center'
   | 'community_health_center'
-  | 'migrant_health_center' 
+  | 'migrant_health_center'
   | 'homeless_health_center'
   | 'public_housing_health_center'
   | 'school_based_health_center'
@@ -93,7 +93,7 @@ export type UtilityCategory =
   | 'clothing';
 
 // Alias for compatibility with other components - expanded
-export type UtilityType = 
+export type UtilityType =
   // Basic Infrastructure
   | 'water_fountain'
   | 'water'
@@ -116,7 +116,7 @@ export type UtilityType =
   // Government Health Services (HRSA)
   | 'health_center'
   | 'community_health_center'
-  | 'migrant_health_center' 
+  | 'migrant_health_center'
   | 'homeless_health_center'
   | 'public_housing_health_center'
   | 'school_based_health_center'

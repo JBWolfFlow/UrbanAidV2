@@ -71,7 +71,7 @@ jobs:
       - uses: docker/setup-buildx-action@v3
       - uses: docker/build-push-action@v6
         with:
-          context: .
+          context: api/
           file: docker/Dockerfile.api
           push: false
           tags: urbanaid-api:latest

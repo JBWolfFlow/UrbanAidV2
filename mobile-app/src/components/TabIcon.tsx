@@ -9,8 +9,8 @@ interface TabIconProps {
 }
 
 export const TabIcon: React.FC<TabIconProps> = ({ routeName, focused, color, size }) => {
-  const getIconName = (routeName: string) => {
-    switch (routeName) {
+  const getIconName = (name: string) => {
+    switch (name) {
       case 'Map':
         return focused ? 'map' : 'map-outline';
       case 'Search':
@@ -31,4 +31,4 @@ export const TabIcon: React.FC<TabIconProps> = ({ routeName, focused, color, siz
       color={color}
     />
   );
-}; 
+};

@@ -1,7 +1,7 @@
 import React, { memo, useMemo, useEffect } from 'react';
 import { View, StyleSheet, Platform } from 'react-native';
 import { Text } from 'react-native-paper';
-import { Utility, UtilityType } from '../types/utility';
+import { Utility } from '../types/utility';
 import { getUtilityIcon } from '../utils/utilityHelpers';
 
 interface PerformanceMarkerProps {
@@ -11,11 +11,11 @@ interface PerformanceMarkerProps {
   onMarkerReady?: () => void;
 }
 
-const PerformanceMarkerComponent: React.FC<PerformanceMarkerProps> = ({ 
-  utility, 
+const PerformanceMarkerComponent: React.FC<PerformanceMarkerProps> = ({
+  utility,
   size = 'medium',
   theme,
-  onMarkerReady
+  onMarkerReady,
 }) => {
   // Immediately signal that marker is ready after mounting
   useEffect(() => {
@@ -23,7 +23,7 @@ const PerformanceMarkerComponent: React.FC<PerformanceMarkerProps> = ({
     const timer = setTimeout(() => {
       onMarkerReady?.();
     }, 50); // Much shorter timeout
-    
+
     return () => clearTimeout(timer);
   }, [onMarkerReady]);
 
@@ -40,7 +40,7 @@ const PerformanceMarkerComponent: React.FC<PerformanceMarkerProps> = ({
     // Use the comprehensive icon mapping from utilityHelpers
     const icon = getUtilityIcon(utility.type || utility.category);
     const backgroundColor = utility.verified ? theme.colors.primary : theme.colors.secondary;
-    
+
     return {
       size: sizeProps,
       icon,
@@ -51,17 +51,17 @@ const PerformanceMarkerComponent: React.FC<PerformanceMarkerProps> = ({
       verifiedTextColor: theme.colors.onTertiary,
     };
   }, [
-    size, 
-    utility.type, 
+    size,
+    utility.type,
     utility.category,
-    utility.verified, 
-    theme.colors.primary, 
-    theme.colors.secondary, 
+    utility.verified,
+    theme.colors.primary,
+    theme.colors.secondary,
     theme.colors.surface,
     theme.colors.onPrimary,
     theme.colors.tertiary,
     theme.colors.onTertiary,
-    sizeMap
+    sizeMap,
   ]);
 
   // Pre-computed styles to avoid inline style objects
@@ -72,7 +72,7 @@ const PerformanceMarkerComponent: React.FC<PerformanceMarkerProps> = ({
       height: markerProps.size.height,
       backgroundColor: markerProps.backgroundColor,
       borderColor: markerProps.borderColor,
-    }
+    },
   ], [markerProps]);
 
   const iconStyle = useMemo(() => [
@@ -80,17 +80,17 @@ const PerformanceMarkerComponent: React.FC<PerformanceMarkerProps> = ({
     {
       fontSize: markerProps.size.fontSize,
       color: markerProps.iconColor,
-    }
+    },
   ], [markerProps]);
 
   const verifiedBadgeStyle = useMemo(() => [
     styles.verifiedBadge,
-    { backgroundColor: markerProps.verifiedBadgeColor }
+    { backgroundColor: markerProps.verifiedBadgeColor },
   ], [markerProps.verifiedBadgeColor]);
 
   const verifiedTextStyle = useMemo(() => [
     styles.verifiedText,
-    { color: markerProps.verifiedTextColor }
+    { color: markerProps.verifiedTextColor },
   ], [markerProps.verifiedTextColor]);
 
   return (
@@ -98,7 +98,7 @@ const PerformanceMarkerComponent: React.FC<PerformanceMarkerProps> = ({
       <Text style={iconStyle}>
         {markerProps.icon}
       </Text>
-      
+
       {utility.verified && (
         <View style={verifiedBadgeStyle}>
           <Text style={verifiedTextStyle}>
@@ -114,7 +114,7 @@ const PerformanceMarkerComponent: React.FC<PerformanceMarkerProps> = ({
 const areEqual = (prevProps: PerformanceMarkerProps, nextProps: PerformanceMarkerProps): boolean => {
   const prev = prevProps.utility;
   const next = nextProps.utility;
-  
+
   return (
     prev.id === next.id &&
     prev.verified === next.verified &&
@@ -177,4 +177,4 @@ const styles = StyleSheet.create({
     textAlign: 'center',
     textAlignVertical: 'center',
   },
-}); 
+});

@@ -22,7 +22,6 @@ import Animated, {
   interpolate,
   interpolateColor,
 } from 'react-native-reanimated';
-import { LinearGradient } from 'expo-linear-gradient';
 import { colors } from '../../theme/colors';
 import { tokens } from '../../theme/tokens';
 import { useThemeStore } from '../../stores/themeStore';
@@ -80,23 +79,21 @@ export const ModernInput: React.FC<ModernInputProps> = ({
     inputRef.current?.focus();
   }, []);
 
-  const surfaceBg = isDarkMode ? colors.dark.surface : '#FFFFFF';
-
   const labelAnimatedStyle = useAnimatedStyle(() => {
     const translateY = interpolate(
       focusAnimation.value,
       [0, 1],
-      [0, -26]
+      [0, -26],
     );
     const scale = interpolate(
       focusAnimation.value,
       [0, 1],
-      [1, 0.85]
+      [1, 0.85],
     );
     const translateX = interpolate(
       focusAnimation.value,
       [0, 1],
-      [0, leftIcon ? -8 : 0]
+      [0, leftIcon ? -8 : 0],
     );
 
     return {
@@ -112,17 +109,11 @@ export const ModernInput: React.FC<ModernInputProps> = ({
     const color = interpolateColor(
       focusAnimation.value,
       [0, 1],
-      [theme.text.tertiary, isFocused ? colors.gradient.start : theme.text.secondary]
+      [theme.text.tertiary, isFocused ? colors.gradient.start : theme.text.secondary],
     );
 
     return { color };
   });
-
-  const borderColor = useMemo(() => {
-    if (error) return colors.state.error;
-    if (isFocused) return colors.gradient.start;
-    return theme.glassBorder;
-  }, [error, isFocused, theme]);
 
   const inputContainerStyle = useMemo((): StyleProp<ViewStyle> => [
     styles.inputContainer,
@@ -132,7 +123,7 @@ export const ModernInput: React.FC<ModernInputProps> = ({
       borderWidth: error ? 2 : 0,
     },
     disabled && styles.disabled,
-  ], [isDarkMode, error, disabled]);
+  ], [error, disabled, theme.glass]);
 
   return (
     <View style={[styles.container, containerStyle]}>

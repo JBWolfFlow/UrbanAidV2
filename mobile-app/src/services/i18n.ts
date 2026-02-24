@@ -11,7 +11,7 @@ const resources = {
       searchTab: 'Search',
       add: 'Add',
       profile: 'Profile',
-      
+
       // Utility Types
       water_fountain: 'Water Fountain',
       restroom: 'Restroom',
@@ -24,7 +24,7 @@ const resources = {
       transit: 'Transit Stop',
       library: 'Library',
       clinic: 'Clinic',
-      
+
       // Actions
       find_nearby: 'Find Nearby',
       add_utility: 'Add Utility',
@@ -32,13 +32,13 @@ const resources = {
       report_issue: 'Report Issue',
       rate: 'Rate',
       share: 'Share',
-      
+
       // Filters
       distance: 'Distance',
       open_now: 'Open Now',
       wheelchair_accessible: 'Wheelchair Accessible',
       verified: 'Verified',
-      
+
       // Messages
       location_permission_required: 'Location Permission Required',
       location_permission_message: 'UrbanAid needs location access to show nearby public utilities.',
@@ -46,7 +46,7 @@ const resources = {
       loading: 'Loading...',
       error: 'Error',
       success: 'Success',
-      
+
       // Forms
       name: 'Name',
       description: 'Description',
@@ -57,7 +57,7 @@ const resources = {
       hours: 'Hours',
       save: 'Save',
       cancel: 'Cancel',
-      
+
       // Settings
       settings: 'Settings',
       dark_mode: 'Dark Mode',
@@ -65,7 +65,7 @@ const resources = {
       about: 'About',
       privacy_policy: 'Privacy Policy',
       terms_of_service: 'Terms of Service',
-      
+
       // Search Screen
       search: {
         placeholder: 'Search for utilities...',
@@ -80,7 +80,7 @@ const resources = {
         accessible: 'Accessible',
         '24hours': '24/7',
       },
-      
+
       // Utility Type Labels
       utilityTypeLabels: {
         waterFountain: 'Water Fountain',
@@ -101,7 +101,7 @@ const resources = {
       search: 'Buscar',
       add: 'Agregar',
       profile: 'Perfil',
-      
+
       // Utility Types
       water_fountain: 'Fuente de Agua',
       restroom: 'Baño',
@@ -114,7 +114,7 @@ const resources = {
       transit: 'Parada de Transporte',
       library: 'Biblioteca',
       clinic: 'Clínica',
-      
+
       // Actions
       find_nearby: 'Encontrar Cerca',
       add_utility: 'Agregar Servicio',
@@ -122,13 +122,13 @@ const resources = {
       report_issue: 'Reportar Problema',
       rate: 'Calificar',
       share: 'Compartir',
-      
+
       // Filters
       distance: 'Distancia',
       open_now: 'Abierto Ahora',
       wheelchair_accessible: 'Accesible en Silla de Ruedas',
       verified: 'Verificado',
-      
+
       // Messages
       location_permission_required: 'Permiso de Ubicación Requerido',
       location_permission_message: 'UrbanAid necesita acceso a la ubicación para mostrar servicios públicos cercanos.',
@@ -136,7 +136,7 @@ const resources = {
       loading: 'Cargando...',
       error: 'Error',
       success: 'Éxito',
-      
+
       // Forms
       name: 'Nombre',
       description: 'Descripción',
@@ -147,7 +147,7 @@ const resources = {
       hours: 'Horarios',
       save: 'Guardar',
       cancel: 'Cancelar',
-      
+
       // Settings
       settings: 'Configuración',
       dark_mode: 'Modo Oscuro',
@@ -164,7 +164,7 @@ const resources = {
       search: 'Rechercher',
       add: 'Ajouter',
       profile: 'Profil',
-      
+
       // Utility Types
       water_fountain: 'Fontaine à Eau',
       restroom: 'Toilettes',
@@ -177,7 +177,7 @@ const resources = {
       transit: 'Arrêt de Transport',
       library: 'Bibliothèque',
       clinic: 'Clinique',
-      
+
       // Actions
       find_nearby: 'Trouver à Proximité',
       add_utility: 'Ajouter un Service',
@@ -185,13 +185,13 @@ const resources = {
       report_issue: 'Signaler un Problème',
       rate: 'Noter',
       share: 'Partager',
-      
+
       // Filters
       distance: 'Distance',
       open_now: 'Ouvert Maintenant',
       wheelchair_accessible: 'Accessible en Fauteuil Roulant',
       verified: 'Vérifié',
-      
+
       // Messages
       location_permission_required: 'Autorisation de Localisation Requise',
       location_permission_message: 'UrbanAid a besoin d\'accéder à votre localisation pour afficher les services publics à proximité.',
@@ -199,7 +199,7 @@ const resources = {
       loading: 'Chargement...',
       error: 'Erreur',
       success: 'Succès',
-      
+
       // Forms
       name: 'Nom',
       description: 'Description',
@@ -210,7 +210,7 @@ const resources = {
       hours: 'Heures',
       save: 'Enregistrer',
       cancel: 'Annuler',
-      
+
       // Settings
       settings: 'Paramètres',
       dark_mode: 'Mode Sombre',
@@ -227,7 +227,7 @@ const resources = {
       search: 'खोजें',
       add: 'जोड़ें',
       profile: 'प्रोफाइल',
-      
+
       // Utility Types
       water_fountain: 'पानी का फव्वारा',
       restroom: 'शौचालय',
@@ -240,7 +240,7 @@ const resources = {
       transit: 'ट्रांजिट स्टॉप',
       library: 'पुस्तकालय',
       clinic: 'क्लिनिक',
-      
+
       // Actions
       find_nearby: 'आस-पास खोजें',
       add_utility: 'सुविधा जोड़ें',
@@ -248,13 +248,13 @@ const resources = {
       report_issue: 'समस्या की रिपोर्ट करें',
       rate: 'रेट करें',
       share: 'साझा करें',
-      
+
       // Filters
       distance: 'दूरी',
       open_now: 'अभी खुला',
       wheelchair_accessible: 'व्हीलचेयर सुलभ',
       verified: 'सत्यापित',
-      
+
       // Messages
       location_permission_required: 'स्थान अनुमति आवश्यक',
       location_permission_message: 'UrbanAid को आस-पास की सार्वजनिक सुविधाएं दिखाने के लिए स्थान की पहुंच की आवश्यकता है।',
@@ -262,7 +262,7 @@ const resources = {
       loading: 'लोड हो रहा है...',
       error: 'त्रुटि',
       success: 'सफलता',
-      
+
       // Forms
       name: 'नाम',
       description: 'विवरण',
@@ -273,7 +273,7 @@ const resources = {
       hours: 'समय',
       save: 'सेव करें',
       cancel: 'रद्द करें',
-      
+
       // Settings
       settings: 'सेटिंग्स',
       dark_mode: 'डार्क मोड',
@@ -290,7 +290,7 @@ const resources = {
       search: 'بحث',
       add: 'إضافة',
       profile: 'الملف الشخصي',
-      
+
       // Utility Types
       water_fountain: 'نافورة مياه',
       restroom: 'دورة مياه',
@@ -303,7 +303,7 @@ const resources = {
       transit: 'محطة نقل',
       library: 'مكتبة',
       clinic: 'عيادة',
-      
+
       // Actions
       find_nearby: 'البحث القريب',
       add_utility: 'إضافة خدمة',
@@ -311,13 +311,13 @@ const resources = {
       report_issue: 'الإبلاغ عن مشكلة',
       rate: 'تقييم',
       share: 'مشاركة',
-      
+
       // Filters
       distance: 'المسافة',
       open_now: 'مفتوح الآن',
       wheelchair_accessible: 'يمكن الوصول إليه بالكرسي المتحرك',
       verified: 'تم التحقق',
-      
+
       // Messages
       location_permission_required: 'إذن الموقع مطلوب',
       location_permission_message: 'يحتاج UrbanAid إلى الوصول إلى موقعك لإظهار المرافق العامة القريبة.',
@@ -325,7 +325,7 @@ const resources = {
       loading: 'جاري التحميل...',
       error: 'خطأ',
       success: 'نجح',
-      
+
       // Forms
       name: 'اسم',
       description: 'وصف',
@@ -336,7 +336,7 @@ const resources = {
       hours: 'ساعات',
       save: 'حفظ',
       cancel: 'إلغاء',
-      
+
       // Settings
       settings: 'إعدادات',
       dark_mode: 'الوضع المظلم',
@@ -355,11 +355,11 @@ const resources = {
 export const initializeI18n = async (): Promise<void> => {
   const locales = RNLocalize.getLocales();
   const deviceLanguage = locales[0]?.languageCode || 'en';
-  
+
   // Map device language to supported languages
   const supportedLanguages = ['en', 'es', 'fr', 'hi', 'ar'];
-  const fallbackLanguage = supportedLanguages.includes(deviceLanguage) 
-    ? deviceLanguage 
+  const fallbackLanguage = supportedLanguages.includes(deviceLanguage)
+    ? deviceLanguage
     : 'en';
 
   await i18n
@@ -381,4 +381,4 @@ export const initializeI18n = async (): Promise<void> => {
 // Re-export useTranslation for convenience
 export const useTranslation = useI18nTranslation;
 
-export default i18n; 
+export default i18n;

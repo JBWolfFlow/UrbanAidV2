@@ -11,4 +11,4 @@ declare module '@env' {
   export const MAP_INITIAL_ZOOM: string;
   export const DEFAULT_SEARCH_RADIUS: string;
   export const MAX_SEARCH_RADIUS: string;
-} 
+}

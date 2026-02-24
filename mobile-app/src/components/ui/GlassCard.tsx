@@ -12,7 +12,6 @@ import {
   Platform,
 } from 'react-native';
 import { BlurView } from 'expo-blur';
-import { colors } from '../../theme/colors';
 import { tokens } from '../../theme/tokens';
 import { useThemeStore } from '../../stores/themeStore';
 
@@ -36,10 +35,8 @@ export const GlassCard: React.FC<GlassCardProps> = ({
   blurIntensity,
 }) => {
   const { isDarkMode } = useThemeStore();
-  const theme = isDarkMode ? colors.dark : colors.light;
-
   const paddingValue = useMemo(() => {
-    if (typeof padding === 'number') return padding;
+    if (typeof padding === 'number') {return padding;}
     const paddingMap = {
       none: 0,
       sm: tokens.spacing.sm,
