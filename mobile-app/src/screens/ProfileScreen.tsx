@@ -165,6 +165,8 @@ const SettingItem: React.FC<SettingItemProps> = ({
       onPressIn={handlePressIn}
       onPressOut={handlePressOut}
       disabled={!onPress}
+      accessibilityLabel={description ? `${title}, ${description}` : title}
+      accessibilityRole={onPress ? 'button' : 'text'}
     >
       <View style={[styles.settingIconContainer, { backgroundColor: colorConfig.bg }]}>
         {renderIcon ? renderIcon(colorConfig.icon) : <Text style={[styles.settingIcon, { color: colorConfig.icon }]}>{icon}</Text>}
@@ -209,6 +211,8 @@ const ModernSwitch: React.FC<ModernSwitchProps> = ({ value, onValueChange, disab
       thumbColor={Platform.OS === 'android' ? (value ? colors.gradient.end : '#f4f3f4') : undefined}
       ios_backgroundColor={offTrackColor}
       style={styles.switch}
+      accessibilityRole="switch"
+      accessibilityState={{ checked: value, disabled }}
     />
   );
 };
@@ -466,7 +470,7 @@ const ProfileScreen: React.FC = () => {
           style={[styles.headerGradient, { paddingTop: insets.top + tokens.spacing.xl }]}
         >
           <View style={styles.avatarContainer}>
-            <Pressable onPress={handleAvatarPress} style={styles.avatarPressable}>
+            <Pressable onPress={handleAvatarPress} style={styles.avatarPressable} accessibilityLabel="Change profile picture" accessibilityRole="button">
               <LinearGradient
                 colors={['rgba(255,255,255,0.3)', 'rgba(255,255,255,0.1)']}
                 style={styles.avatarBorder}
@@ -490,7 +494,7 @@ const ProfileScreen: React.FC = () => {
                 </Svg>
               </View>
             </Pressable>
-            <Pressable onPress={handleUsernamePress} style={styles.userNamePressable}>
+            <Pressable onPress={handleUsernamePress} style={styles.userNamePressable} accessibilityLabel={`Display name: ${username}. Tap to edit`} accessibilityRole="button">
               <Text style={styles.userName}>{username}</Text>
               <Svg width={16} height={16} viewBox="0 0 24 24" fill="none" style={styles.editIcon}>
                 <Path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7" stroke="rgba(255,255,255,0.7)" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" />

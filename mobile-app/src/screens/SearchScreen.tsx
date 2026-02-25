@@ -466,9 +466,11 @@ const SearchScreen: React.FC = () => {
               value={searchQuery}
               onChangeText={handleSearch}
               returnKeyType="search"
+              accessibilityLabel="Search utilities"
+              accessibilityRole="search"
             />
             {searchQuery.length > 0 && (
-              <Pressable onPress={clearSearch} hitSlop={tokens.hitSlop.medium}>
+              <Pressable onPress={clearSearch} hitSlop={tokens.hitSlop.medium} accessibilityLabel="Clear search" accessibilityRole="button">
                 <View style={[styles.clearButton, {
                   backgroundColor: isDarkMode ? 'rgba(255,255,255,0.1)' : 'rgba(0,0,0,0.06)',
                 }]}>
@@ -493,6 +495,9 @@ const SearchScreen: React.FC = () => {
               <Pressable
                 key={type.key}
                 onPress={() => toggleFilter(type.key)}
+                accessibilityLabel={`${type.label} filter${isActive ? ', selected' : ''}`}
+                accessibilityRole="button"
+                accessibilityState={{ selected: isActive }}
                 style={[
                   styles.filterChip,
                   {
@@ -525,6 +530,8 @@ const SearchScreen: React.FC = () => {
           {selectedFilters.length > 0 && (
             <Pressable
               onPress={clearFilters}
+              accessibilityLabel="Clear all filters"
+              accessibilityRole="button"
               style={[styles.clearFiltersChip, {
                 borderColor: isDarkMode ? 'rgba(255,255,255,0.15)' : 'rgba(239,68,68,0.2)',
               }]}

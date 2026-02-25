@@ -277,6 +277,9 @@ const FeatureToggle: React.FC<FeatureToggleProps> = ({
         }}
         thumbColor={Platform.OS === 'android' ? (value ? colors.gradient.end : '#f4f3f4') : undefined}
         ios_backgroundColor={isDarkMode ? '#39393D' : '#E9E9EB'}
+        accessibilityLabel={title}
+        accessibilityRole="switch"
+        accessibilityState={{ checked: value }}
       />
     </View>
   );
@@ -454,6 +457,8 @@ const AddUtilityScreen: React.FC = () => {
             },
           ]}
           onPress={() => setIsTypeModalVisible(true)}
+          accessibilityLabel={formData.type ? `Utility type: ${getSelectedType()?.label}. Tap to change` : 'Select utility type'}
+          accessibilityRole="button"
         >
           <Text style={[styles.typeSelectorLabel, { color: themeColors.text.secondary }]}>
             Utility Type *
@@ -743,7 +748,7 @@ const AddUtilityScreen: React.FC = () => {
           {/* Navigation buttons — inline, scroll with content */}
           <View style={styles.bottomNav}>
             {currentStep > 1 ? (
-              <Pressable style={styles.backButton} onPress={handleBack}>
+              <Pressable style={styles.backButton} onPress={handleBack} accessibilityLabel="Go back" accessibilityRole="button">
                 <View style={styles.backButtonContent}>
                   <ChevronLeftIcon color={themeColors.text.secondary} size={18} />
                   <Text style={[styles.backButtonText, { color: themeColors.text.secondary }]}>

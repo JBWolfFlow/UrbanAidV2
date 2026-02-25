@@ -20,7 +20,7 @@ from utils.logging_config import setup_logging
 setup_logging()
 
 logger = logging.getLogger(__name__)
-from fastapi import FastAPI, HTTPException, Depends, Query, status, Body
+from fastapi import FastAPI, Header, HTTPException, Depends, Query, status, Body
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.security import HTTPBearer
 from sqlalchemy.orm import Session
@@ -193,10 +193,14 @@ async def admin_seed(
     source: str = Query(
         default="all", description="Source to seed: all, food, shelters, etc."
     ),
-    key: str = Query(..., description="Admin seed key"),
+    x_admin_key: str = Header(..., alias="X-Admin-Key", description="Admin seed key"),
 ):
-    """Trigger database seeding for specific sources."""
-    if key != ADMIN_SEED_KEY:
+    """Trigger database seeding for specific sources.
+
+    The admin key must be passed in the X-Admin-Key header (not query params)
+    to prevent it from appearing in server access logs.
+    """
+    if x_admin_key != ADMIN_SEED_KEY:
         raise HTTPException(status_code=403, detail="Invalid admin key")
 
     from scripts.seed_wa import SOURCE_FETCHERS, ALL_SOURCES, insert_facilities

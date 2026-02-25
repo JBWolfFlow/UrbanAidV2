@@ -5,23 +5,16 @@ import {
   StyleSheet,
   ActivityIndicator,
   TouchableOpacity,
-  Alert,
 } from 'react-native';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import { NavigationContainer } from '@react-navigation/native';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import { createStackNavigator } from '@react-navigation/stack';
 import { Provider as PaperProvider } from 'react-native-paper';
-import { SafeAreaProvider, useSafeAreaInsets } from 'react-native-safe-area-context';
+import { SafeAreaProvider } from 'react-native-safe-area-context';
 
 import { LinearGradient } from 'expo-linear-gradient';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
-import Animated, {
-  useSharedValue,
-  useAnimatedStyle,
-  withSpring,
-  interpolate,
-} from 'react-native-reanimated';
 
 // Import screens from src/screens
 import MapScreen from './src/screens/MapScreen';
@@ -46,17 +39,138 @@ import { GlassTabBar } from './src/components/ui/GlassTabBar';
 // Import i18n
 import { initializeI18n } from './src/services/i18n';
 
-import MapView from 'react-native-maps';
+// ── Error Boundary ──────────────────────────────────────────────────
+// Catches unhandled JS errors and shows a recovery screen instead of a
+// white screen crash. Required for App Store approval.
+
+interface ErrorBoundaryState {
+  hasError: boolean;
+  error: Error | null;
+}
+
+class ErrorBoundary extends React.Component<
+  { children: React.ReactNode },
+  ErrorBoundaryState
+> {
+  state: ErrorBoundaryState = { hasError: false, error: null };
+
+  static getDerivedStateFromError(error: Error): ErrorBoundaryState {
+    return { hasError: true, error };
+  }
+
+  componentDidCatch(error: Error, info: React.ErrorInfo) {
+    if (__DEV__) {
+      console.error('ErrorBoundary caught:', error, info.componentStack);
+    }
+    // TODO: send to crash reporting service when integrated (C4)
+  }
+
+  handleRestart = () => {
+    this.setState({ hasError: false, error: null });
+  };
+
+  render() {
+    if (this.state.hasError) {
+      return (
+        <View style={errorStyles.container}>
+          <LinearGradient
+            colors={[colors.gradient.start, colors.gradient.end]}
+            style={errorStyles.iconCircle}
+          >
+            <Text style={errorStyles.iconText}>!</Text>
+          </LinearGradient>
+          <Text style={errorStyles.title}>Something went wrong</Text>
+          <Text style={errorStyles.message}>
+            The app encountered an unexpected error. Please try restarting.
+          </Text>
+          {__DEV__ && this.state.error && (
+            <Text style={errorStyles.debug} numberOfLines={4}>
+              {this.state.error.message}
+            </Text>
+          )}
+          <TouchableOpacity
+            style={errorStyles.button}
+            onPress={this.handleRestart}
+            activeOpacity={0.8}
+            accessibilityRole="button"
+            accessibilityLabel="Restart app"
+          >
+            <LinearGradient
+              colors={[colors.gradient.start, colors.gradient.end]}
+              style={errorStyles.buttonGradient}
+            >
+              <Text style={errorStyles.buttonText}>Restart</Text>
+            </LinearGradient>
+          </TouchableOpacity>
+        </View>
+      );
+    }
+    return this.props.children;
+  }
+}
+
+const errorStyles = StyleSheet.create({
+  container: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    padding: 32,
+    backgroundColor: colors.light.background,
+  },
+  iconCircle: {
+    width: 72,
+    height: 72,
+    borderRadius: 36,
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginBottom: 24,
+  },
+  iconText: {
+    fontSize: 36,
+    fontWeight: '700',
+    color: '#FFFFFF',
+  },
+  title: {
+    fontSize: 22,
+    fontWeight: '700',
+    color: colors.light.text.primary,
+    marginBottom: 12,
+    textAlign: 'center',
+  },
+  message: {
+    fontSize: 16,
+    color: colors.light.text.secondary,
+    textAlign: 'center',
+    lineHeight: 22,
+    marginBottom: 24,
+  },
+  debug: {
+    fontSize: 12,
+    color: colors.state.error,
+    textAlign: 'center',
+    marginBottom: 24,
+    fontFamily: 'Courier',
+  },
+  button: {
+    borderRadius: 16,
+    overflow: 'hidden',
+  },
+  buttonGradient: {
+    paddingHorizontal: 40,
+    paddingVertical: 14,
+    borderRadius: 16,
+  },
+  buttonText: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: '#FFFFFF',
+    textAlign: 'center',
+  },
+});
 
 const Tab = createBottomTabNavigator();
 const Stack = createStackNavigator();
 const queryClient = new QueryClient();
-
-const MinimalMapTest = () => (
-  <View style={{ flex: 1 }}>
-    <MapView style={{ flex: 1 }} />
-  </View>
-);
 
 /**
  * Tab Navigator — uses the DEFAULT built-in tab bar.
@@ -71,10 +185,10 @@ const TabNavigator = () => {
         headerShown: false,
       }}
     >
-      <Tab.Screen name="Map" component={MapScreen} options={{ title: 'Map' }} />
-      <Tab.Screen name="Search" component={SearchScreen} options={{ title: 'Search' }} />
-      <Tab.Screen name="Add" component={AddUtilityScreen} options={{ title: 'Add' }} />
-      <Tab.Screen name="Profile" component={ProfileScreen} options={{ title: 'Settings' }} />
+      <Tab.Screen name="Map" component={MapScreen} options={{ title: 'Map', tabBarAccessibilityLabel: 'Map tab' }} />
+      <Tab.Screen name="Search" component={SearchScreen} options={{ title: 'Search', tabBarAccessibilityLabel: 'Search tab' }} />
+      <Tab.Screen name="Add" component={AddUtilityScreen} options={{ title: 'Add', tabBarAccessibilityLabel: 'Add utility tab' }} />
+      <Tab.Screen name="Profile" component={ProfileScreen} options={{ title: 'Settings', tabBarAccessibilityLabel: 'Settings tab' }} />
     </Tab.Navigator>
   );
 };
@@ -129,9 +243,9 @@ const App: React.FC = () => {
         await initializeI18n();
         await new Promise((resolve) => setTimeout(resolve, 100));
         setIsReady(true);
-        console.log('UrbanAid V2 initialized...');
+        if (__DEV__) { console.log('UrbanAid V2 initialized...'); }
       } catch (error) {
-        console.error('Error initializing app:', error);
+        if (__DEV__) { console.error('Error initializing app:', error); }
         setIsReady(true);
       }
     };
@@ -164,11 +278,13 @@ const App: React.FC = () => {
 
   return (
     <GestureHandlerRootView style={{ flex: 1 }}>
-      <QueryClientProvider client={queryClient}>
-        <SafeAreaProvider>
-          <ThemedApp />
-        </SafeAreaProvider>
-      </QueryClientProvider>
+      <ErrorBoundary>
+        <QueryClientProvider client={queryClient}>
+          <SafeAreaProvider>
+            <ThemedApp />
+          </SafeAreaProvider>
+        </QueryClientProvider>
+      </ErrorBoundary>
     </GestureHandlerRootView>
   );
 };

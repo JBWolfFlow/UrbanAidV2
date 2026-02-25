@@ -73,11 +73,14 @@ class ReactNativeDelegate: ExpoReactNativeFactoryDelegate {
   override func bundleURL() -> URL? {
 #if DEBUG
     let provider = RCTBundleURLProvider.sharedSettings()
-    // On physical device, RCTBundleURLProvider may not auto-discover Metro.
+    #if !targetEnvironment(simulator)
+    // Physical device: Metro auto-discovery often fails over WiFi.
     // Set jsLocation so it knows where to find the dev server.
+    // Update this IP when your local network address changes.
     if provider.jsLocation == nil || provider.jsLocation?.isEmpty == true {
       provider.jsLocation = "192.168.1.8"
     }
+    #endif
     return provider.jsBundleURL(forBundleRoot: ".expo/.virtual-metro-entry")
 #else
     return Bundle.main.url(forResource: "main", withExtension: "jsbundle")

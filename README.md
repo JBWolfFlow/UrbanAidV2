@@ -1,80 +1,75 @@
 # UrbanAid V2
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
-[![React Native](https://img.shields.io/badge/React%20Native-0.72+-blue.svg)](https://reactnative.dev/)
-[![FastAPI](https://img.shields.io/badge/FastAPI-0.100+-green.svg)](https://fastapi.tiangolo.com/)
+[![React Native](https://img.shields.io/badge/React%20Native-0.79-blue.svg)](https://reactnative.dev/)
+[![FastAPI](https://img.shields.io/badge/FastAPI-0.104+-green.svg)](https://fastapi.tiangolo.com/)
 [![Python](https://img.shields.io/badge/Python-3.11+-blue.svg)](https://python.org/)
 
-**A comprehensive cross-platform mobile application designed to help users quickly find nearby public utilities like water fountains, bathrooms, charging stations, and other critical civic resources. Built with React Native and FastAPI, UrbanAid V2 provides real-time access to essential public services across all 50 US states.**
+**A mobile application that helps users find nearby public utilities — water fountains, restrooms, shelters, health centers, and more. Built with React Native (Expo) and FastAPI, UrbanAid V2 provides instant access to essential public resources with bundled data for zero-latency launch.**
 
-## 🌍 Mission
+## Mission
 
-UrbanAid empowers people — travelers, low-income families, the homeless, athletes, parents, and everyday citizens — to find clean, safe, and accessible public resources with minimal friction. The app launches fast, works offline, and operates globally.
+UrbanAid empowers people — travelers, low-income families, the homeless, athletes, parents, and everyday citizens — to find clean, safe, and accessible public resources with minimal friction.
 
-## ⚡ Core Value: Simplicity
-
-- App launches straight into the **map screen**
-- 1-tap search and navigation
-- Everything works in 3 taps or fewer
-
-## 🛠️ Tech Stack
+## Tech Stack
 
 ### Frontend
-- **React Native** (iOS + Android)
-- Google Maps SDK integration
-- Offline-ready with local caching
-- Light & dark mode support
+- **React Native 0.79** with Expo SDK 53 (New Architecture / Fabric enabled)
+- **Google Maps SDK** with native `icon` markers (~4,000 pins rendered instantly)
+- Bundled utility data for offline-first experience
+- Light & dark mode via Zustand theme store
+- i18n support (English, Spanish, French, Hindi, Arabic)
 
 ### Backend
-- **FastAPI** with async/await
-- REST API endpoints
-- PostgreSQL database
+- **FastAPI 0.104** with async/await
+- **PostgreSQL** database with SQLAlchemy ORM
+- JWT authentication with RBAC
+- Redis-backed rate limiting & response caching
 - Docker containerization
+- Structured logging (JSON or human-readable)
 
 ### Integrations
-- Google Maps SDK
-- Apple CoreLocation
-- Firebase Auth (optional)
-- Geolocation services
+- Google Maps SDK (iOS)
+- HRSA Health Centers (seeded database)
+- VA Medical Facilities (seeded database)
+- USDA Facilities (live API)
+- OneBusAway Transit API (Puget Sound)
 
-## 🏗️ Project Structure
+## Project Structure
 
 ```
-/mobile-app/          # React Native application
+/mobile-app/          # React Native (Expo) application
   /src/
-    /components/      # Reusable UI components
-    /screens/         # Screen components
-    /services/        # API and data services
-    /utils/           # Helper functions
-    /assets/          # Images, fonts, etc.
-    /hooks/           # Custom React hooks
+    /components/      # Reusable UI components (GlassCard, GradientButton, etc.)
+    /screens/         # Screen components (Map, Search, Add, Profile)
+    /services/        # API service, i18n
+    /stores/          # Zustand stores (theme, location, utility, onboarding)
+    /utils/           # Helpers (markerImages, permissions, location)
+    /assets/          # Marker PNGs, bundled utilities.json
+    /theme/           # Colors, tokens, design system
   App.tsx
-  main.ts
 
 /api/                 # FastAPI backend
-  /routes/            # API route handlers
-  /models/            # Database models
-  /controllers/       # Business logic
-  /services/          # External services
-  /schemas/           # Pydantic schemas
-  /utils/             # Backend utilities
+  /models/            # SQLAlchemy database models
+  /controllers/       # Business logic (class-based)
+  /services/          # External service wrappers
+  /schemas/           # Pydantic request/response schemas
+  /utils/             # Auth, exceptions, logging
+  /middleware/         # Security headers, rate limiting, CORS
+  /scripts/           # Database seeding scripts
   main.py
   requirements.txt
-
-/docs/                # Documentation
-/docker/              # Docker configuration
 ```
 
-## 🚀 Quick Start
+## Quick Start
 
 ### Prerequisites
 
 - Node.js 18+
 - Python 3.11+
-- React Native CLI
+- Expo CLI (`npx expo`)
 - Google Maps API key
-- Docker (optional)
-- Git
+- Docker (optional, for backend)
 
 ### Installation
 
@@ -87,8 +82,8 @@ UrbanAid empowers people — travelers, low-income families, the homeless, athle
 2. **Set up the mobile app**
    ```bash
    cd mobile-app
-   npm install
-   npx react-native run-ios    # or run-android
+   npm install          # patch-package runs automatically via postinstall
+   npx expo run:ios     # builds and runs on iOS device/simulator
    ```
 
 3. **Set up the backend**
@@ -98,120 +93,88 @@ UrbanAid empowers people — travelers, low-income families, the homeless, athle
    uvicorn main:app --reload
    ```
 
-4. **Using Docker (Recommended)**
+4. **Using Docker**
    ```bash
    docker-compose up --build
    ```
 
-## 🧩 Core Features
+## Core Features
 
-### 1. 📍 Utility Discovery
-- Water fountains
-- Public restrooms  
-- Benches
-- Handwashing stations
-- Cooling/Warming shelters
-- Free food locations
-- Public Wi-Fi
-- Phone charging stations
-- Transit stops
-- Public libraries
-- Community clinics
+### Utility Discovery
+- Water fountains, public restrooms, benches
+- Handwashing stations, cooling/warming shelters
+- Free food locations, public Wi-Fi, phone charging
+- Transit stops, public libraries, community clinics
+- HRSA health centers, VA facilities, USDA offices
 
-### 2. 🔎 Search & Filter
-- Distance-based filtering
-- Open now status
-- Wheelchair accessibility
-- Trust/verification scores
-- Natural language search
+### Search & Filter
+- 15 grouped category filters with instant switching
+- Natural language search with synonym matching
+- Distance-based sorting (nearest first)
+- Wheelchair accessibility indicators
 
-### 3. ➕ Community Contributions
-- Add new utility locations
+### Community Contributions
+- Add new utility locations (3-step wizard with map picker)
 - Rate and review utilities
 - Report issues or closures
-- Photo uploads
 
-### 4. 📶 Offline Mode
-- Cached location data
-- Offline map tiles
-- Sync when online
+### Offline-First
+- ~4,000 utility locations bundled in app binary
+- Stale-while-revalidate background refresh
+- AsyncStorage persistence across sessions
 
-### 5. 🛡️ Privacy & Safety
+### Privacy & Safety
 - No forced login required
 - Location used only in foreground
-- Open privacy policy
-- Community moderation
+- Privacy policy & terms of service screens
+- Community moderation via admin roles
 
-## 🌐 Internationalization
+## Platform Support
 
-Supported languages:
-- English
-- Spanish
-- French
-- Hindi
-- Arabic
-
-## 📱 Platform Support
-
-- **iOS**: 15.0+
+- **iOS**: 15.0+ (primary platform, tested on iPhone 16 Pro)
 - **Android**: API Level 23+ (Android 6.0)
 
-## 🤝 Contributing
+## Coverage
+
+- **Washington State**: Full coverage with ~4,000 utility locations
+- Government data sources: HRSA, USDA, VA
+
+## Performance
+
+- **App Launch**: ~5s welcome screen while native markers mount
+- **Marker Rendering**: All ~4,000 pins in one React commit (no trickle)
+- **Image Loading**: Native MarkerIconPreloader pre-caches ~36 unique images
+- **Filter Switching**: Instant via deferred values (no re-mount)
+
+## CI/CD
+
+- **Mobile CI**: TypeScript type-check + ESLint (`mobile-ci.yml`)
+- **API CI**: Ruff linting + pytest + Docker build (`api-ci.yml`)
+- **EAS Build**: Development, preview, and production profiles configured
+
+## Security
+
+- JWT authentication with refresh token rotation
+- CORS whitelist (no wildcard origins)
+- Security headers (CSP, HSTS, X-Frame-Options)
+- Rate limiting (Redis-backed in production)
+- Admin endpoints secured via header-based keys
+- API docs disabled in production
+
+## Contributing
 
 See [CONTRIBUTING.md](docs/CONTRIBUTING.md) for development guidelines.
 
-## 📄 License
+## License
 
 MIT License - see [LICENSE](LICENSE) for details.
 
-## 📊 Project Status
-
-- ✅ **Mobile App**: React Native application with full feature set
-- ✅ **Backend API**: FastAPI with comprehensive endpoints
-- ✅ **Database**: PostgreSQL with optimized schemas
-- ✅ **Docker**: Containerized deployment ready
-- ✅ **50 State Coverage**: Complete US coverage implemented
-- ✅ **Government Data Integration**: HRSA, USDA, VA services integrated
-- 🔄 **Testing**: Comprehensive test suite in development
-- 🔄 **CI/CD**: GitHub Actions workflow in progress
-
-## 🏛️ Government Data Integration
-
-UrbanAid V2 integrates with multiple government data sources:
-
-- **HRSA (Health Resources & Services Administration)**: Community health centers
-- **USDA (United States Department of Agriculture)**: Food assistance programs
-- **VA (Veterans Affairs)**: Veterans services and facilities
-- **State & Local APIs**: Municipal utility data
-
-## 📈 Performance
-
-- **App Launch Time**: < 2 seconds
-- **Offline Capability**: Full functionality without internet
-- **Data Sync**: Real-time updates when online
-- **Battery Optimization**: Minimal background usage
-
-## 🔒 Security & Privacy
-
-- **No Personal Data Collection**: Location data only when app is active
-- **Open Source**: Full transparency in code and data handling
-- **Community Moderation**: User-driven content verification
-- **GDPR Compliant**: Privacy-first design principles
-
-## 🆘 Support
-
-For support, please:
-- Open an issue on [GitHub Issues](https://github.com/JBWolfFlow/UrbanAidV2/issues)
-- Check our [documentation](docs/)
-- Review [contributing guidelines](docs/CONTRIBUTING.md)
-
-## 🙏 Acknowledgments
+## Acknowledgments
 
 - Government data providers (HRSA, USDA, VA)
+- OneBusAway Puget Sound (transit data)
 - Open source community
-- Beta testers and contributors
-- Municipal data partnerships
 
 ---
 
-**Made with ❤️ for the community** 
+**Made with care for urban accessibility**

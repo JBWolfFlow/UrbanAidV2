@@ -223,10 +223,10 @@ class TestAdminEndpoints:
         assert response.status_code == 200
 
     def test_admin_seed(self, client, admin_headers):
-        """Test POST /admin/seed requires key param."""
+        """Test POST /admin/seed requires X-Admin-Key header."""
         response = client.post("/admin/seed", headers=admin_headers)
 
-        # 422 = missing required 'key' query param, 403 = wrong key
+        # 422 = missing required X-Admin-Key header, 403 = wrong key
         assert response.status_code in [200, 201, 403, 422, 500]
 
     def test_analytics_stats(self, client, admin_headers):

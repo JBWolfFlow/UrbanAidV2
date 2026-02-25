@@ -834,11 +834,15 @@ const MapScreen: React.FC = () => {
               onChangeText={setSearchQuery}
               onSubmitEditing={handleSearch}
               returnKeyType="search"
+              accessibilityLabel="Search utilities"
+              accessibilityRole="search"
             />
             {searchQuery.length > 0 && (
               <TouchableOpacity
                 onPress={() => { setSearchQuery(''); setCommittedSearch(''); }}
                 style={{ padding: 4, marginRight: 4 }}
+                accessibilityLabel="Clear search"
+                accessibilityRole="button"
               >
                 <Text style={{ fontSize: 16, color: isDarkMode ? 'rgba(255,255,255,0.5)' : 'rgba(0,0,0,0.4)' }}>✕</Text>
               </TouchableOpacity>
@@ -846,6 +850,8 @@ const MapScreen: React.FC = () => {
             <TouchableOpacity
               style={styles.filterButton}
               onPress={() => setShowFilters(!showFilters)}
+              accessibilityLabel={showFilters ? 'Hide filters' : 'Show filters'}
+              accessibilityRole="button"
             >
               <LinearGradient
                 colors={[colors.gradient.start, colors.gradient.end]}
@@ -904,7 +910,7 @@ const MapScreen: React.FC = () => {
           fabAnimatedStyle,
         ]}
       >
-        <TouchableOpacity onPress={handleMyLocationPress} activeOpacity={0.8}>
+        <TouchableOpacity onPress={handleMyLocationPress} activeOpacity={0.8} accessibilityLabel="Center on my location" accessibilityRole="button">
           <View style={styles.fab}>
             <BlurView intensity={60} tint={isDarkMode ? 'dark' : 'light'} style={StyleSheet.absoluteFill} />
             <LinearGradient
