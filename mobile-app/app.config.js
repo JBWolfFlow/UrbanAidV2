@@ -12,6 +12,7 @@ export default {
   expo: {
     name: 'UrbanAid',
     slug: 'urbanaid',
+    scheme: 'urbanaid',
     version: '1.0.0',
     orientation: 'portrait',
     icon: './assets/icon.png',
@@ -21,7 +22,11 @@ export default {
       backgroundColor: '#2196F3',
     },
     updates: {
-      fallbackToCacheTimeout: 0,
+      url: 'https://u.expo.dev/ecf5c188-010a-4e84-9e45-2b3cae4acb92',
+      fallbackToCacheTimeout: 30000,
+    },
+    runtimeVersion: {
+      policy: 'appVersion',
     },
     assetBundlePatterns: ['**/*'],
     ios: {
@@ -65,7 +70,18 @@ export default {
     web: {
       favicon: './assets/favicon.png',
     },
-    plugins: [],
+    plugins: [
+      '@react-native-firebase/app',
+      '@react-native-firebase/crashlytics',
+      'expo-updates',
+      [
+        'expo-notifications',
+        {
+          icon: './assets/icon.png',
+          color: '#2196F3',
+        },
+      ],
+    ],
     extra: {
       eas: {
         projectId: 'ecf5c188-010a-4e84-9e45-2b3cae4acb92',

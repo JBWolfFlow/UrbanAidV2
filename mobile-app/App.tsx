@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useCallback, useEffect, useRef, useState } from 'react';
 import {
   View,
   Text,
@@ -7,7 +7,7 @@ import {
   TouchableOpacity,
 } from 'react-native';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
-import { NavigationContainer } from '@react-navigation/native';
+import { NavigationContainer, NavigationState } from '@react-navigation/native';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import { createStackNavigator } from '@react-navigation/stack';
 import { Provider as PaperProvider } from 'react-native-paper';
@@ -39,6 +39,18 @@ import { GlassTabBar } from './src/components/ui/GlassTabBar';
 // Import i18n
 import { initializeI18n } from './src/services/i18n';
 
+// Import crash reporting
+import { initCrashReporting, recordError } from './src/services/crashReporting';
+
+// Import app rating
+import { trackSessionAndMaybePrompt } from './src/services/appRating';
+
+// Import analytics
+import { initAnalytics, logScreenView } from './src/services/analytics';
+
+// Import notifications
+import { registerForPushNotifications } from './src/services/notifications';
+
 // ── Error Boundary ──────────────────────────────────────────────────
 // Catches unhandled JS errors and shows a recovery screen instead of a
 // white screen crash. Required for App Store approval.
@@ -62,7 +74,7 @@ class ErrorBoundary extends React.Component<
     if (__DEV__) {
       console.error('ErrorBoundary caught:', error, info.componentStack);
     }
-    // TODO: send to crash reporting service when integrated (C4)
+    recordError(error, `ErrorBoundary: ${info.componentStack?.slice(0, 200) ?? 'unknown'}`);
   }
 
   handleRestart = () => {
@@ -216,15 +228,56 @@ const RootNavigator = () => {
   );
 };
 
+// ── Deep Linking ────────────────────────────────────────────────────
+// Maps urbanaid://map, urbanaid://search, etc. to navigation screens.
+const linking: any = {
+  prefixes: ['urbanaid://'],
+  config: {
+    screens: {
+      MainTabs: {
+        screens: {
+          Map: 'map',
+          Search: 'search',
+          Add: 'add',
+          Profile: 'profile',
+        },
+      },
+      PrivacyPolicy: 'privacy',
+      TermsOfService: 'terms',
+    },
+  },
+};
+
+/**
+ * Extract the active screen name from nested navigation state.
+ */
+function getActiveRouteName(state: NavigationState | undefined): string {
+  if (!state) { return 'Unknown'; }
+  const route = state.routes[state.index];
+  if (route.state) {
+    return getActiveRouteName(route.state as NavigationState);
+  }
+  return route.name;
+}
+
 /**
  * Theme-aware App wrapper — PaperProvider at root so Portal renders above everything correctly
  */
 const ThemedApp = () => {
   const { currentTheme } = useThemeStore();
+  const routeNameRef = useRef<string>('Map');
+
+  const onNavigationStateChange = useCallback((state: NavigationState | undefined) => {
+    const currentRouteName = getActiveRouteName(state);
+    if (currentRouteName !== routeNameRef.current) {
+      logScreenView(currentRouteName);
+      routeNameRef.current = currentRouteName;
+    }
+  }, []);
 
   return (
     <PaperProvider theme={currentTheme}>
-      <NavigationContainer>
+      <NavigationContainer linking={linking} onStateChange={onNavigationStateChange}>
         <RootNavigator />
       </NavigationContainer>
     </PaperProvider>
@@ -241,6 +294,10 @@ const App: React.FC = () => {
     const initializeApp = async () => {
       try {
         await initializeI18n();
+        await initCrashReporting();
+        await initAnalytics();
+        trackSessionAndMaybePrompt();
+        registerForPushNotifications();
         await new Promise((resolve) => setTimeout(resolve, 100));
         setIsReady(true);
         if (__DEV__) { console.log('UrbanAid V2 initialized...'); }
