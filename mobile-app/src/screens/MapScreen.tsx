@@ -684,7 +684,7 @@ const MapScreen: React.FC = () => {
   // setIconSrc: call is an instant cache hit, preventing the progressive
   // trickle caused by 4,000 independent async image loads.
   const markerElements = useMemo(() => {
-    if (__DEV__) console.log(`[Markers] Building ${finalMarkers.length} marker elements`);
+    if (__DEV__) { console.log(`[Markers] Building ${finalMarkers.length} marker elements`); }
     return finalMarkers.map((utility) => {
       const utilityType = utility.type || utility.category || 'water_fountain';
       const catZIndex = CATEGORY_ZINDEX[utility.category] || 5;
