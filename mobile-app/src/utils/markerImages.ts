@@ -1,7 +1,9 @@
 /**
  * Pre-rendered glassmorphic marker images with category icons.
- * Using native `image` prop instead of custom <View> children
- * gives us zero RN bridge overhead — critical for 3,600+ markers.
+ * Using native `icon` prop (GMSMarker.icon = UIImage) instead of
+ * `image` prop (UIImageView iconView) eliminates UIView snapshotting.
+ * Combined with the native icon cache in AIRGoogleMapMarker, all
+ * ~4,000 markers get synchronous icon assignment — zero trickle.
  *
  * Each marker is a 32×32 @1x (64 @2x, 96 @3x) glassmorphic circle
  * with a white category icon baked in.
@@ -111,6 +113,27 @@ const defaultImage: ImageRequireSource = require('../assets/markers/marker_defau
 // GMSMarker.opacity doesn't respond to React prop updates, so we swap
 // the image to a transparent pixel instead.
 export const HIDDEN_MARKER_IMAGE: ImageRequireSource = require('../assets/markers/marker_hidden.png');
+
+/**
+ * All unique marker image sources — pre-load these into the native image cache
+ * BEFORE mounting <Marker> components to eliminate per-marker async image loads.
+ */
+export const ALL_UNIQUE_MARKER_IMAGES: ImageRequireSource[] = (() => {
+  const seen = new Set<number>();
+  const result: ImageRequireSource[] = [];
+  for (const img of Object.values(imageByCategory)) {
+    const id = img as unknown as number;
+    if (!seen.has(id)) {
+      seen.add(id);
+      result.push(img);
+    }
+  }
+  const defaultId = defaultImage as unknown as number;
+  if (!seen.has(defaultId)) {
+    result.push(defaultImage);
+  }
+  return result;
+})();
 
 // Cache: normalized category → image source (avoids repeated prefix matching)
 const categoryCache = new Map<string, ImageRequireSource>();

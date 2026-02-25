@@ -11,6 +11,7 @@
 		3E461D99554A48A4959DE609 /* SplashScreen.storyboard in Resources */ = {isa = PBXBuildFile; fileRef = AA286B85B6C04FC6940260E9 /* SplashScreen.storyboard */; };
 		4A77D348C9180AFEC258C566 /* PrivacyInfo.xcprivacy in Resources */ = {isa = PBXBuildFile; fileRef = C28ED9E1A4C6A287D5BFAEF2 /* PrivacyInfo.xcprivacy */; };
 		7747863E19D120CE4B5BCC6F /* ExpoModulesProvider.swift in Sources */ = {isa = PBXBuildFile; fileRef = F9EEA899B776F6951647F94C /* ExpoModulesProvider.swift */; };
+		A1B2C3D4E5F607080910ABCD /* MarkerIconPreloader.m in Sources */ = {isa = PBXBuildFile; fileRef = A1B2C3D4E5F607080910ABCE /* MarkerIconPreloader.m */; };
 		BB2F792D24A3F905000567C9 /* Expo.plist in Resources */ = {isa = PBXBuildFile; fileRef = BB2F792C24A3F905000567C9 /* Expo.plist */; };
 		C4E37AA385EF6AC89EF3AD37 /* libPods-UrbanAid.a in Frameworks */ = {isa = PBXBuildFile; fileRef = 8F176EE8866E4D08CD58995A /* libPods-UrbanAid.a */; };
 		F11748422D0307B40044C1D9 /* AppDelegate.swift in Sources */ = {isa = PBXBuildFile; fileRef = F11748412D0307B40044C1D9 /* AppDelegate.swift */; };
@@ -21,6 +22,8 @@
 		13B07FB51A68108700A75B9A /* Images.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; name = Images.xcassets; path = UrbanAid/Images.xcassets; sourceTree = "<group>"; };
 		13B07FB61A68108700A75B9A /* Info.plist */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text.plist.xml; name = Info.plist; path = UrbanAid/Info.plist; sourceTree = "<group>"; };
 		8F176EE8866E4D08CD58995A /* libPods-UrbanAid.a */ = {isa = PBXFileReference; explicitFileType = archive.ar; includeInIndex = 0; path = "libPods-UrbanAid.a"; sourceTree = BUILT_PRODUCTS_DIR; };
+		A1B2C3D4E5F607080910ABCE /* MarkerIconPreloader.m */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.objc; name = MarkerIconPreloader.m; path = UrbanAid/MarkerIconPreloader.m; sourceTree = "<group>"; };
+		A1B2C3D4E5F607080910ABCF /* MarkerIconPreloader.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; name = MarkerIconPreloader.h; path = UrbanAid/MarkerIconPreloader.h; sourceTree = "<group>"; };
 		AA286B85B6C04FC6940260E9 /* SplashScreen.storyboard */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = file.storyboard; name = SplashScreen.storyboard; path = UrbanAid/SplashScreen.storyboard; sourceTree = "<group>"; };
 		BA5C3218F3292011334F422B /* Pods-UrbanAid.release.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-UrbanAid.release.xcconfig"; path = "Target Support Files/Pods-UrbanAid/Pods-UrbanAid.release.xcconfig"; sourceTree = "<group>"; };
 		BB2F792C24A3F905000567C9 /* Expo.plist */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text.plist.xml; path = Expo.plist; sourceTree = "<group>"; };
@@ -49,6 +52,8 @@
 			children = (
 				F11748412D0307B40044C1D9 /* AppDelegate.swift */,
 				F11748442D0722820044C1D9 /* UrbanAid-Bridging-Header.h */,
+				A1B2C3D4E5F607080910ABCF /* MarkerIconPreloader.h */,
+				A1B2C3D4E5F607080910ABCE /* MarkerIconPreloader.m */,
 				BB2F792B24A3F905000567C9 /* Supporting */,
 				13B07FB51A68108700A75B9A /* Images.xcassets */,
 				13B07FB61A68108700A75B9A /* Info.plist */,
@@ -372,6 +377,7 @@
 			files = (
 				F11748422D0307B40044C1D9 /* AppDelegate.swift in Sources */,
 				7747863E19D120CE4B5BCC6F /* ExpoModulesProvider.swift in Sources */,
+				A1B2C3D4E5F607080910ABCD /* MarkerIconPreloader.m in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};

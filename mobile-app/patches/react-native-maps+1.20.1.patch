@@ -1,0 +1,77 @@
+diff --git a/node_modules/react-native-maps/ios/AirGoogleMaps/AIRGoogleMapMarker.h b/node_modules/react-native-maps/ios/AirGoogleMaps/AIRGoogleMapMarker.h
+index 0fd022f..f260c8e 100644
+--- a/node_modules/react-native-maps/ios/AirGoogleMaps/AIRGoogleMapMarker.h
++++ b/node_modules/react-native-maps/ios/AirGoogleMaps/AIRGoogleMapMarker.h
+@@ -16,6 +16,8 @@
+ 
+ @interface AIRGoogleMapMarker : UIView
+ 
+++ (NSMutableDictionary<NSString *, UIImage *> *)iconCache;
++
+ @property (nonatomic, weak) RCTBridge *bridge;
+ @property (nonatomic, strong) AIRGoogleMapCallout *calloutView;
+ @property (nonatomic, strong) NSString *identifier;
+diff --git a/node_modules/react-native-maps/ios/AirGoogleMaps/AIRGoogleMapMarker.m b/node_modules/react-native-maps/ios/AirGoogleMaps/AIRGoogleMapMarker.m
+index 73bfd84..a31b548 100644
+--- a/node_modules/react-native-maps/ios/AirGoogleMaps/AIRGoogleMapMarker.m
++++ b/node_modules/react-native-maps/ios/AirGoogleMaps/AIRGoogleMapMarker.m
+@@ -23,6 +23,12 @@ CGRect unionRect(CGRect a, CGRect b) {
+                     MAX(a.size.height, b.size.height));
+ }
+ 
++// ── Static icon cache — shared across ALL marker instances ──────────
++// Only ~30 unique images across ~4,000 markers. First load per unique
++// image goes async via RCTImageLoader; all subsequent markers with the
++// same image hit this cache synchronously — zero GCD thread hops.
++static NSMutableDictionary<NSString *, UIImage *> *_iconCache = nil;
++
+ @interface AIRGoogleMapMarker ()
+ @end
+ 
+@@ -43,6 +49,13 @@ - (instancetype)init
+   return self;
+ }
+ 
+++ (NSMutableDictionary<NSString *, UIImage *> *)iconCache {
++  if (!_iconCache) {
++    _iconCache = [NSMutableDictionary new];
++  }
++  return _iconCache;
++}
++
+ - (void)layoutSubviews {
+   float width = 0;
+   float height = 0;
+@@ -325,6 +338,17 @@ - (void)setIconSrc:(NSString *)iconSrc
+     _reloadImageCancellationBlock = nil;
+   }
+ 
++  // ── Synchronous cache hit path ──────────────────────────────────
++  // ~30 unique images across ~4,000 markers. After the first async load
++  // per unique image, every subsequent marker gets its icon synchronously
++  // — no RCTImageLoader, no dispatch_async, no GCD thread hops.
++  UIImage *cachedIcon = [AIRGoogleMapMarker iconCache][_iconSrc];
++  if (cachedIcon) {
++    _realMarker.icon = cachedIcon;
++    return;
++  }
++
++  // ── Async fallback (first load per unique image) ────────────────
+   if (!_realMarker.icon) {
+     // prevent glitch with marker (cf. https://github.com/react-native-maps/react-native-maps/issues/3657)
+     UIImage *emptyImage = [[UIImage alloc] init];
+@@ -341,10 +365,13 @@ - (void)setIconSrc:(NSString *)iconSrc
+                               partialLoadBlock:nil
+                                completionBlock:^(NSError *error, UIImage *image) {
+                                  if (error) {
+-                                   // TODO(lmr): do something with the error?
+                                    NSLog(@"%@", error);
+                                  }
+                                  dispatch_async(dispatch_get_main_queue(), ^{
++                                   // Cache for future markers with same icon
++                                   if (image && self->_iconSrc) {
++                                     [AIRGoogleMapMarker iconCache][self->_iconSrc] = image;
++                                   }
+                                    self->_realMarker.icon = image;
+                                  });
+                                }];

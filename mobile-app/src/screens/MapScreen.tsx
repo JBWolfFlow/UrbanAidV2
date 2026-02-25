@@ -8,9 +8,10 @@ import {
   TextInput,
   TouchableOpacity,
   Keyboard,
-  Modal,
+  Image,
+  NativeModules,
 } from 'react-native';
-import { useFocusEffect } from '@react-navigation/native';
+// useFocusEffect removed — map no longer re-centers on tab focus
 import {
   Portal,
   Text,
@@ -36,7 +37,7 @@ import { useUtilityStore } from '../stores/utilityStore';
 import { UtilityDetails } from '../components/UtilityDetails';
 import { Utility } from '../types/utility';
 import { UtilityMarker } from '../components/UtilityMarker';
-import { getMarkerImage } from '../utils/markerImages';
+import { getMarkerImage, ALL_UNIQUE_MARKER_IMAGES } from '../utils/markerImages';
 import { requestLocationPermission } from '../utils/permissions';
 
 import Svg, { Line, Circle, Path, Rect } from 'react-native-svg';
@@ -104,37 +105,35 @@ const WelcomeBackOverlay = React.memo(({ visible, isDarkMode: _isDarkMode, progr
   if (!shouldRender) {return null;}
 
   return (
-    <Modal visible={true} transparent animationType="none" statusBarTranslucent>
-      <Animated.View style={[welcomeStyles.container, containerFadeStyle]}>
-        <LinearGradient
-          colors={[colors.gradient.start, colors.gradient.end]}
-          start={{ x: 0, y: 0 }}
-          end={{ x: 1, y: 1 }}
-          style={StyleSheet.absoluteFill}
-        />
-        <View style={welcomeStyles.content}>
-          {/* App branding */}
-          <Text style={welcomeStyles.cityEmoji}>🏙️</Text>
-          <Text style={welcomeStyles.welcomeLabel}>Welcome back to</Text>
-          <Text style={welcomeStyles.appTitle}>UrbanAid</Text>
+    <Animated.View style={[welcomeStyles.container, containerFadeStyle]}>
+      <LinearGradient
+        colors={[colors.gradient.start, colors.gradient.end]}
+        start={{ x: 0, y: 0 }}
+        end={{ x: 1, y: 1 }}
+        style={StyleSheet.absoluteFill}
+      />
+      <View style={welcomeStyles.content}>
+        {/* App branding */}
+        <Text style={welcomeStyles.cityEmoji}>🏙️</Text>
+        <Text style={welcomeStyles.welcomeLabel}>Welcome back to</Text>
+        <Text style={welcomeStyles.appTitle}>UrbanAid</Text>
 
-          {/* Progress bar */}
-          <View style={welcomeStyles.progressTrack}>
-            <Animated.View style={[welcomeStyles.progressFill, progressBarStyle]}>
-              <LinearGradient
-                colors={['rgba(255,255,255,0.9)', 'rgba(255,255,255,0.6)']}
-                start={{ x: 0, y: 0 }}
-                end={{ x: 1, y: 0 }}
-                style={StyleSheet.absoluteFill}
-              />
-            </Animated.View>
-          </View>
-
-          {/* Status text */}
-          <Text style={welcomeStyles.statusText}>{displayStatus}</Text>
+        {/* Progress bar */}
+        <View style={welcomeStyles.progressTrack}>
+          <Animated.View style={[welcomeStyles.progressFill, progressBarStyle]}>
+            <LinearGradient
+              colors={['rgba(255,255,255,0.9)', 'rgba(255,255,255,0.6)']}
+              start={{ x: 0, y: 0 }}
+              end={{ x: 1, y: 0 }}
+              style={StyleSheet.absoluteFill}
+            />
+          </Animated.View>
         </View>
-      </Animated.View>
-    </Modal>
+
+        {/* Status text */}
+        <Text style={welcomeStyles.statusText}>{displayStatus}</Text>
+      </View>
+    </Animated.View>
   );
 });
 
@@ -143,6 +142,8 @@ const welcomeStyles = StyleSheet.create({
     ...StyleSheet.absoluteFillObject,
     justifyContent: 'center',
     alignItems: 'center',
+    zIndex: 9999,
+    elevation: 9999,
   },
   content: {
     alignItems: 'center',
@@ -272,18 +273,16 @@ const WA_BOUNDS = {
   southWest: { latitude: 45.54, longitude: -124.85 },
 };
 
-// Default region: centered on Washington state
+// Default region: Washington state overview showing all ~4,000 utility pins.
 const WA_DEFAULT_REGION: Region = {
   latitude: 47.4,
   longitude: -120.5,
   latitudeDelta: 4.5,
-  longitudeDelta: 8.0,
+  longitudeDelta: 3.5,
 };
 
-// Viewport culling — only render markers within 2.6x the visible map area.
-// 0.8 = 80% screen buffer per edge, pre-loads more markers to prevent pop-in
-// when Google Maps fires onRegionChangeComplete with adjusted bounds.
-const VIEWPORT_BUFFER = 0.8;
+// Note: Viewport culling removed — native Google Maps SDK handles draw-culling.
+// All ~4,000 markers stay mounted permanently, eliminating Fabric mass-unmount crashes.
 
 // Pre-build Set lookup for O(1) category matching per filter chip
 const FILTER_CATEGORY_MAP = new Map<string, Set<string>>(
@@ -421,7 +420,9 @@ const MapScreen: React.FC = () => {
   const { t } = useTranslation();
   const insets = useSafeAreaInsets();
   const { isDarkMode } = useThemeStore();
-  const { currentLocation, getCurrentLocation, hasLocationPermission, setLocationPermission } = useLocationStore();
+  const getCurrentLocation = useLocationStore(s => s.getCurrentLocation);
+  const hasLocationPermission = useLocationStore(s => s.hasLocationPermission);
+  const setLocationPermission = useLocationStore(s => s.setLocationPermission);
   const { utilities } = useUtilityStore();
 
   const mapRef = useRef<MapView>(null);
@@ -432,38 +433,57 @@ const MapScreen: React.FC = () => {
   const [showFilters, setShowFilters] = useState(false);
   const [selectedUtility, setSelectedUtility] = useState<Utility | null>(null);
   const mapReadyRef = useRef(false);
-  const regionDebounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
-  const [mapReady, setMapReady] = useState(false);
   const [activeFilter, setActiveFilter] = useState('all');
   // Deferred filter value — chips highlight immediately via activeFilter,
   // while the heavy marker re-render uses this deferred value so the UI
   // stays responsive during the first filter tap (~3400 marker unmounts).
   const deferredFilter = useDeferredValue(activeFilter);
-  // Viewport culling: track the visible map region so we only render nearby markers.
-  // Initialized from currentLocation so culling is active from the first frame.
-  const [mapRegion, setMapRegion] = useState<Region | null>(
-    currentLocation ? {
-      latitude: currentLocation.latitude,
-      longitude: currentLocation.longitude,
-      latitudeDelta: 0.05,
-      longitudeDelta: 0.05,
-    } : null,
-  );
-  // Refs for values needed inside useFocusEffect without triggering re-fires.
-  const currentLocationRef = useRef(currentLocation);
-  currentLocationRef.current = currentLocation;
-  const utilitiesLengthRef = useRef(utilities.length);
-  utilitiesLengthRef.current = utilities.length;
-
   // Bottom sheet snap points
   const snapPoints = useMemo(() => ['35%', '65%', '90%'], []);
 
   // Animation values
   const fabRotation = useSharedValue(0);
 
-  // Loading overlay state — the useEffect that drives it lives below,
-  // after filteredUtilities and mountedCount are declared.
+  // Loading overlay state — the useEffect that drives it lives below.
   const [renderComplete, setRenderComplete] = useState(false);
+
+  // ── Native icon cache pre-warming ───────────────────────────────────
+  // Populates AIRGoogleMapMarker's STATIC icon cache dictionary via our
+  // custom native module. Unlike Image.prefetch (which warms RCTImageLoader
+  // but still triggers per-marker async loads), this ensures every
+  // setIconSrc: call is an INSTANT synchronous cache hit — zero trickle.
+  const [imagesCached, setImagesCached] = useState(false);
+  useEffect(() => {
+    let cancelled = false;
+    const t0 = Date.now();
+    const preload = async () => {
+      const uris = ALL_UNIQUE_MARKER_IMAGES
+        .map(src => Image.resolveAssetSource(src)?.uri)
+        .filter(Boolean) as string[];
+
+      try {
+        const { MarkerIconPreloader } = NativeModules;
+        if (MarkerIconPreloader) {
+          const result = await MarkerIconPreloader.preloadIcons(uris);
+          if (__DEV__) {
+            console.log(`[PreCache] Native preload done in ${Date.now() - t0}ms — ${result.loaded}/${result.total}`);
+          }
+        } else {
+          if (__DEV__) { console.warn('[PreCache] MarkerIconPreloader not available, using Image.prefetch fallback'); }
+          await Promise.allSettled(uris.map(uri => Image.prefetch(uri)));
+        }
+      } catch (e) {
+        if (__DEV__) { console.warn('[PreCache] Native preload failed, falling back', e); }
+        const fallbackUris = ALL_UNIQUE_MARKER_IMAGES
+          .map(src => Image.resolveAssetSource(src)?.uri)
+          .filter(Boolean) as string[];
+        await Promise.allSettled(fallbackUris.map(uri => Image.prefetch(uri)));
+      }
+      if (!cancelled) { setImagesCached(true); }
+    };
+    preload();
+    return () => { cancelled = true; };
+  }, []);
 
   useEffect(() => {
     initializeMap();
@@ -472,42 +492,17 @@ const MapScreen: React.FC = () => {
 
 
 
-  // Re-center map every time the Map tab gains focus.
-  useFocusEffect(
-    useCallback(() => {
-      const loc = currentLocationRef.current;
-      if (loc && mapRef.current) {
-        mapRef.current.animateToRegion({
-          latitude: loc.latitude,
-          longitude: loc.longitude,
-          latitudeDelta: 0.01,
-          longitudeDelta: 0.01,
-        }, 500);
-      }
-    }, []),
-  );
+  // Note: Removed auto-centering on tab focus. Map stays where user left it.
+  // Tap the location FAB to fly to your GPS position.
 
-  // Center map on user location once it becomes available for the first time.
-  // initializeMap also does this, but if the map isn't ready when initializeMap
-  // runs, this effect catches it. Only fires once (hasInitialCentered ref guard).
-  const hasInitialCentered = useRef(false);
-  useEffect(() => {
-    if (!hasInitialCentered.current && currentLocation && mapRef.current && mapReady) {
-      hasInitialCentered.current = true;
-      mapRef.current.animateToRegion({
-        latitude: currentLocation.latitude,
-        longitude: currentLocation.longitude,
-        latitudeDelta: 0.01,
-        longitudeDelta: 0.01,
-      }, 500);
-    }
-  }, [currentLocation, mapReady]);
+  // Note: Removed auto-centering on user location. Map starts on WA_DEFAULT_REGION.
+  // User taps the location FAB to fly to their GPS position on demand.
 
 
   const initializeMap = async () => {
     let hasPermission = hasLocationPermission;
 
-    // Request permission if not already granted
+    // Request permission if not already granted (for blue dot, not for centering)
     if (!hasPermission) {
       const granted = await requestLocationPermission();
       setLocationPermission(granted);
@@ -518,18 +513,12 @@ const MapScreen: React.FC = () => {
       }
     }
 
+    // Fetch location for the blue dot — but don't center the map.
+    // Map stays on WA_DEFAULT_REGION. User can tap the FAB to fly to their location.
     try {
-      const location = await getCurrentLocation();
-      if (location && mapRef.current) {
-        mapRef.current.animateToRegion({
-          latitude: location.latitude,
-          longitude: location.longitude,
-          latitudeDelta: 0.01,
-          longitudeDelta: 0.01,
-        }, 1000);
-      }
+      await getCurrentLocation();
     } catch (error) {
-      console.error('Error initializing map:', error);
+      console.error('Error getting location:', error);
     }
   };
 
@@ -626,24 +615,6 @@ const MapScreen: React.FC = () => {
     setActiveFilter(filterKey);
   }, []);
 
-  // Update viewport bounds after every pan/zoom/animation completes.
-  // No isGesture filter — we want culling to update for both user gestures
-  // and programmatic animations (e.g., animateToRegion on search/tab focus).
-  const firstRegionFiredRef = useRef(false);
-  const handleRegionChangeComplete = useCallback((region: Region) => {
-    // First region change: apply immediately (no debounce) so render set
-    // targets the real viewport ASAP during initial load.
-    if (!firstRegionFiredRef.current) {
-      firstRegionFiredRef.current = true;
-      setMapRegion(region);
-      return;
-    }
-    if (regionDebounceRef.current) {clearTimeout(regionDebounceRef.current);}
-    regionDebounceRef.current = setTimeout(() => {
-      setMapRegion(region);
-    }, 300);
-  }, []);
-
   const handleBottomSheetClose = useCallback(() => {
     // BottomSheet stays mounted, just clear the selected utility
     setSelectedUtility(null);
@@ -687,39 +658,6 @@ const MapScreen: React.FC = () => {
     return result;
   }, [utilities, deferredFilter, committedSearch]);
 
-  // ── Progressive mount ───────────────────────────────────────────────
-  // Mount ALL markers once in batches of 500 every 50ms via setTimeout chain.
-  // Filter/search changes use return null (unmount) — no progressive batching.
-  const MOUNT_BATCH = 5000;       // mount all ~3,670 in a single tick (just a JS array slice)
-  const RENDER_BATCH = 300;       // stable render set adds 300 native markers per batch (no churn)
-  const INITIAL_RENDER_BATCH = 4000; // during welcome screen — load all viewport markers in one shot
-  const MAX_RENDERED = 4000;      // above total utility count — effectively unlimited
-  const MOUNT_INTERVAL = 50;
-  const [mountedCount, setMountedCount] = useState(0);
-
-  // Reset only when utilities itself changes (re-fetch from API)
-  const prevUtilitiesLenRef = useRef(utilities.length);
-  useEffect(() => {
-    if (utilities.length !== prevUtilitiesLenRef.current) {
-      prevUtilitiesLenRef.current = utilities.length;
-      setMountedCount(0);
-    }
-  }, [utilities.length]);
-
-  // setTimeout chain: mount MOUNT_BATCH per tick
-  useEffect(() => {
-    if (mountedCount >= utilities.length) {return;}
-    const timer = setTimeout(() => {
-      setMountedCount(prev => Math.min(prev + MOUNT_BATCH, utilities.length));
-    }, MOUNT_INTERVAL);
-    return () => clearTimeout(timer);
-  }, [mountedCount, utilities.length]);
-
-  const visibleUtilities = useMemo(
-    () => utilities.slice(0, mountedCount),
-    [utilities, mountedCount],
-  );
-
   // O(1) per-marker filter check — null means everything matches.
   // Uses deferredFilter so this recomputes on the deferred render pass,
   // keeping the chip highlight instant while markers update asynchronously.
@@ -728,135 +666,55 @@ const MapScreen: React.FC = () => {
     return new Set(filteredUtilities.map(u => u.id));
   }, [filteredUtilities, deferredFilter, committedSearch]);
 
-  // ── Viewport culling ──────────────────────────────────────────────
-  // Compute the buffered bounding box from the current map region.
-  // At city zoom (~0.05° delta), this covers ~0.1° total — plenty to
-  // prevent visible pop-in during normal panning.
-  const viewportBounds = useMemo(() => {
-    if (!mapRegion) {return null;}
-    const latHalf = mapRegion.latitudeDelta * (0.5 + VIEWPORT_BUFFER);
-    const lngHalf = mapRegion.longitudeDelta * (0.5 + VIEWPORT_BUFFER);
-    return {
-      minLat: mapRegion.latitude - latHalf,
-      maxLat: mapRegion.latitude + latHalf,
-      minLng: mapRegion.longitude - lngHalf,
-      maxLng: mapRegion.longitude + lngHalf,
-    };
-  }, [mapRegion]);
-
-  // Final marker list — viewport culling + category/search filter in one pass.
-  // At city zoom this reduces ~3,670 → ~300 markers, making filter changes instant.
-  const markersToRender = useMemo(() => {
-    let markers = visibleUtilities;
-
-    // Viewport culling — skip if no region yet (initial load before map fires)
-    if (viewportBounds) {
-      markers = markers.filter(u =>
-        u.latitude >= viewportBounds.minLat &&
-        u.latitude <= viewportBounds.maxLat &&
-        u.longitude >= viewportBounds.minLng &&
-        u.longitude <= viewportBounds.maxLng,
-      );
-    }
-
-    // Category/search filter — null means everything matches ("All" with no search)
+  // ── Final marker list ──────────────────────────────────────────────
+  // All ~4,000 markers rendered at once. No viewport culling, no progressive
+  // batching, no render set. Native Google Maps SDK handles draw-culling.
+  // Pan/zoom = zero mount/unmount = zero Fabric crashes.
+  // Only filter/search changes cause mount/unmount (via useDeferredValue).
+  const finalMarkers = useMemo(() => {
     if (matchingFilterIds !== null) {
-      markers = markers.filter(u => matchingFilterIds.has(u.id));
+      return utilities.filter(u => matchingFilterIds.has(u.id));
     }
+    return utilities;
+  }, [utilities, matchingFilterIds]);
 
-    return markers;
-  }, [visibleUtilities, viewportBounds, matchingFilterIds]);
+  // Marker elements — memoized so React skips reconciliation on re-renders.
+  // CRITICAL: Gated behind imagesCached so markers only mount AFTER all ~30
+  // unique PNGs are in RCTImageLoader's cache. This ensures every native
+  // setIconSrc: call is an instant cache hit, preventing the progressive
+  // trickle caused by 4,000 independent async image loads.
+  const markerElements = useMemo(() => {
+    if (__DEV__) console.log(`[Markers] Building ${finalMarkers.length} marker elements`);
+    return finalMarkers.map((utility) => {
+      const utilityType = utility.type || utility.category || 'water_fountain';
+      const catZIndex = CATEGORY_ZINDEX[utility.category] || 5;
+      return (
+        <Marker
+          key={utility.id}
+          coordinate={{ latitude: utility.latitude, longitude: utility.longitude }}
+          onPress={() => handleMarkerPress(utility)}
+          tracksViewChanges={false}
+          zIndex={catZIndex}
+          anchor={{ x: 0.5, y: 0.5 }}
+          icon={getMarkerImage(utilityType)}
+        />
+      );
+    });
+  }, [finalMarkers, handleMarkerPress]);
 
-  // ── Stable render set ─────────────────────────────────────────────
-  // Tracks which marker IDs are in the React tree via a ref.
-  // On viewport change: existing markers STAY mounted (no churn);
-  // only markers that left the viewport are pruned, and new markers
-  // are added in batches. This eliminates the simultaneous
-  // unmount+mount bursts that crash the native Google Maps layer.
-  const renderedIdsRef = useRef<Set<string>>(new Set());
-  const [renderTick, setRenderTick] = useState(0);
-
-  // On viewport/filter change: prune stale markers, add first batch of new ones
-  useEffect(() => {
-    const validIds = new Set(markersToRender.map(m => m.id));
-    let changed = false;
-
-    // Prune markers that left the viewport
-    for (const id of renderedIdsRef.current) {
-      if (!validIds.has(id)) {
-        renderedIdsRef.current.delete(id);
-        changed = true;
-      }
-    }
-
-    // Add new markers — during initial load, dump ALL viewport markers in one shot;
-    // after initial load, use conservative batching for smooth pan/zoom.
-    const batchSize = initialLoadCompleteRef.current ? RENDER_BATCH : INITIAL_RENDER_BATCH;
-    let added = 0;
-    for (const m of markersToRender) {
-      if (renderedIdsRef.current.size >= MAX_RENDERED) {break;}
-      if (added >= batchSize) {break;}
-      if (!renderedIdsRef.current.has(m.id)) {
-        renderedIdsRef.current.add(m.id);
-        added++;
-        changed = true;
-      }
-    }
-
-    if (changed) {setRenderTick(prev => prev + 1);}
-  }, [markersToRender]);
-
-  // Growth timer — continue adding new markers in batches
-  useEffect(() => {
-    const target = Math.min(markersToRender.length, MAX_RENDERED);
-    if (renderedIdsRef.current.size >= target) {return;}
-
-    const timer = setTimeout(() => {
-      const batchSize = initialLoadCompleteRef.current ? RENDER_BATCH : INITIAL_RENDER_BATCH;
-      let added = 0;
-      for (const m of markersToRender) {
-        if (renderedIdsRef.current.size >= MAX_RENDERED) {break;}
-        if (added >= batchSize) {break;}
-        if (!renderedIdsRef.current.has(m.id)) {
-          renderedIdsRef.current.add(m.id);
-          added++;
-        }
-      }
-      if (added > 0) {setRenderTick(prev => prev + 1);}
-    }, MOUNT_INTERVAL);
-
-    return () => clearTimeout(timer);
-  }, [renderTick, markersToRender]);
-
-  // Stable final markers — filters by the rendered set.
-  // On zoom-out: existing markers stay, new ones appear progressively.
-  // On zoom-in: out-of-viewport markers are excluded immediately.
-  const finalMarkers = useMemo(
-    () => markersToRender.filter(m => renderedIdsRef.current.has(m.id)),
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-    [markersToRender, renderTick],
-  );
-
-  // Loading overlay — shown during progressive mount only (no API fetch phase).
+  // Loading overlay — shown on cold launch only.
   const initialLoadCompleteRef = useRef(false);
 
-  // ── Time-based welcome screen gate ────────────────────────────────
-  // Ensures the welcome screen stays visible for MIN_DISPLAY_MS,
-  // giving the progress bar time to fill while native markers are created.
-  const dataReadyTimeRef = useRef<number>(Date.now());
-  const MIN_DISPLAY_MS = 5000;
-
+  // ── Welcome screen gate ─────────────────────────────────────────
+  // Timer starts AFTER imagesCached flips true (markers just mounted).
+  // With the native icon cache, setIconSrc: hits are synchronous — no
+  // async pipeline. 3s is ample for ~4,000 GMSMarker object creation.
   useEffect(() => {
-    if (mountedCount < utilities.length) { setRenderComplete(false); return; }
-    // Wait for the stable render set to finish adding all visible markers
-    const target = Math.min(markersToRender.length, MAX_RENDERED);
-    if (target > 0 && renderedIdsRef.current.size < target) { setRenderComplete(false); return; }
-    // Enforce minimum display time so pins fully load behind the welcome screen
-    const elapsed = Date.now() - dataReadyTimeRef.current;
-    const remaining = Math.max(1500, MIN_DISPLAY_MS - elapsed);
-    const timer = setTimeout(() => setRenderComplete(true), remaining);
+    if (!imagesCached || utilities.length === 0) { setRenderComplete(false); return; }
+    if (__DEV__) { console.log('[Gate] Markers mounted — starting 5s native creation buffer'); }
+    const timer = setTimeout(() => setRenderComplete(true), 5000);
     return () => clearTimeout(timer);
-  }, [mountedCount, utilities.length, markersToRender.length, renderTick]);
+  }, [imagesCached, utilities.length]);
 
   // Mark initial load as complete so tab switches don't re-show the overlay.
   useEffect(() => {
@@ -869,13 +727,6 @@ const MapScreen: React.FC = () => {
   // The overlay fills over fillDurationMs while native markers are created.
   const loadingProgress = 1.0;
   const loadingStatusText = 'Loading map pins…';
-
-  // Cleanup debounce timer on unmount
-  useEffect(() => {
-    return () => {
-      if (regionDebounceRef.current) {clearTimeout(regionDebounceRef.current);}
-    };
-  }, []);
 
   // Show overlay on cold launch only — not on tab re-focus.
   const showLoadingOverlay = !initialLoadCompleteRef.current && !renderComplete;
@@ -935,37 +786,18 @@ const MapScreen: React.FC = () => {
           provider={PROVIDER_GOOGLE}
           showsUserLocation
           showsMyLocationButton={false}
-          initialRegion={currentLocation ? {
-            latitude: currentLocation.latitude,
-            longitude: currentLocation.longitude,
-            latitudeDelta: 0.05,
-            longitudeDelta: 0.05,
-          } : WA_DEFAULT_REGION}
+          initialRegion={WA_DEFAULT_REGION}
           onMapReady={() => {
             mapReadyRef.current = true;
-            setMapReady(true);
             mapRef.current?.setMapBoundaries?.(
               WA_BOUNDS.northEast,
               WA_BOUNDS.southWest,
             );
           }}
-          onRegionChangeComplete={handleRegionChangeComplete}
+          /* Viewport culling removed — all markers stay mounted.
+             Native Google Maps handles draw-culling internally. */
       >
-          {finalMarkers.map((utility) => {
-            const utilityType = utility.type || utility.category || 'water_fountain';
-            const catZIndex = CATEGORY_ZINDEX[utility.category] || 5;
-            return (
-              <Marker
-                key={utility.id}
-                coordinate={{ latitude: utility.latitude, longitude: utility.longitude }}
-                onPress={() => handleMarkerPress(utility)}
-                tracksViewChanges={false}
-                zIndex={catZIndex}
-                anchor={{ x: 0.5, y: 0.5 }}
-                image={getMarkerImage(utilityType)}
-              />
-            );
-          })}
+          {imagesCached && markerElements}
           {selectedUtility && (
             <Marker
               key={`selected-${selectedUtility.id}`}
@@ -1060,7 +892,7 @@ const MapScreen: React.FC = () => {
         isDarkMode={isDarkMode}
         progress={loadingProgress}
         statusText={loadingStatusText}
-        fillDurationMs={MIN_DISPLAY_MS}
+        fillDurationMs={5000}
       />
 
       {/* FAB — My Location button */}

@@ -255,22 +255,36 @@ export const useUtilityStore = create<UtilityState>()(
       };
     },
     {
-      name: 'utility-storage-v4',
+      name: 'utility-storage-v5',
       storage: createJSONStorage(() => AsyncStorage),
       partialize: (state) => ({
-        utilities: state.utilities,
+        // Don't persist utilities — bundled JSON is the source of truth.
+        // Only user-created utilities (not in bundled set) are worth persisting.
+        // This prevents a ~1.6MB AsyncStorage write and the hydration re-render.
         activeFilters: state.activeFilters,
         lastFetchTimestamp: state.lastFetchTimestamp,
       }),
       merge: (persisted, current) => {
         const persistedState = persisted as Partial<UtilityState>;
+        const currentState = current as UtilityState;
+
+        // Bundled data is the source of truth for all ~4,000 pins.
+        // Only append user-created utilities (IDs not in the bundled set).
+        // If no user-created utilities, return the SAME array reference
+        // to prevent React from re-reconciling all 4,000 <Marker> components.
+        const bundledIds = new Set(
+          (bundledUtilities as unknown as Utility[]).map(u => u.id),
+        );
+        const userCreated = (persistedState?.utilities ?? []).filter(
+          u => !bundledIds.has(u.id),
+        );
+
         return {
-          ...(current as UtilityState),
+          ...currentState,
           ...persistedState,
-          // Never let a cached empty array overwrite bundled pin data
-          utilities: (persistedState?.utilities?.length ?? 0) > 0
-            ? persistedState!.utilities!
-            : (current as UtilityState).utilities,
+          utilities: userCreated.length > 0
+            ? [...currentState.utilities, ...userCreated]
+            : currentState.utilities, // Same reference = zero re-render
         };
       },
     },
