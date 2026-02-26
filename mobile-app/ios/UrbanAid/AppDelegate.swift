@@ -1,5 +1,6 @@
 import Expo
 import FirebaseCore
+import GoogleMaps
 import React
 import ReactAppDependencyProvider
 
@@ -27,6 +28,9 @@ public class AppDelegate: ExpoAppDelegate {
 // @generated begin @react-native-firebase/app-didFinishLaunchingWithOptions - expo prebuild (DO NOT MODIFY) sync-10e8520570672fd76b2403b7e1e27f5198a6349a
 FirebaseApp.configure()
 // @generated end @react-native-firebase/app-didFinishLaunchingWithOptions
+    if let apiKey = Bundle.main.object(forInfoDictionaryKey: "GMSApiKey") as? String, !apiKey.isEmpty {
+      GMSServices.provideAPIKey(apiKey)
+    }
     factory.startReactNative(
       withModuleName: "main",
       in: window,
