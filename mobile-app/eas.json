@@ -26,6 +26,7 @@
       }
     },
     "production": {
+      "distribution": "store",
       "autoIncrement": true,
       "channel": "production",
       "ios": {

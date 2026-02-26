@@ -3,10 +3,10 @@
 
 const config = {
   // API Configuration
-  API_URL: __DEV__ ? 'http://10.0.0.175:8000' : 'https://api.urbanaid.com',
+  API_URL: __DEV__ ? 'https://urbanaidv2-production.up.railway.app' : 'https://urbanaidv2-production.up.railway.app',
   
   // Google Maps API Key
-  GOOGLE_MAPS_API_KEY: 'AIzaSyDOahtj8yxnSU71jXhaYCaPvfCpUFJRGpg',
+  GOOGLE_MAPS_API_KEY: process.env.GOOGLE_MAPS_API_KEY || '',
   
   // App Configuration
   APP_NAME: 'UrbanAid',

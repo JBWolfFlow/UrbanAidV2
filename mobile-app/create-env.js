@@ -10,7 +10,7 @@ const envContent = `# UrbanAid Environment Variables
 API_URL=http://localhost:8000
 
 # Google Maps API Key
-GOOGLE_MAPS_API_KEY=AIzaSyDOahtj8yxnSU71jXhaYCaPvfCpUFJRGpg
+GOOGLE_MAPS_API_KEY=your_google_maps_api_key_here
 
 # App Configuration
 APP_NAME=UrbanAid

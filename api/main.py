@@ -73,6 +73,27 @@ ENVIRONMENT = os.getenv("ENVIRONMENT", "development")
 RATE_LIMIT_ENABLED = os.getenv("RATE_LIMIT_ENABLED", "true").lower() == "true"
 
 
+def _ensure_reviewer_account(db):
+    """Create the App Store reviewer test account if it doesn't exist."""
+    from models.user import User
+    from utils.auth import get_password_hash
+
+    existing = db.query(User).filter(User.username == "reviewer").first()
+    if existing:
+        return
+    reviewer = User(
+        username="reviewer",
+        email="reviewer@urbanaid.app",
+        hashed_password=get_password_hash("ReviewerTest123!"),
+        role="user",
+        is_active=True,
+        email_verified=True,
+    )
+    db.add(reviewer)
+    db.commit()
+    logger.info("Created App Store reviewer test account")
+
+
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     """Application lifespan events"""
@@ -83,6 +104,7 @@ async def lifespan(app: FastAPI):
     db = SessionLocal()
     try:
         count = db.query(UtilityModel).count()
+        _ensure_reviewer_account(db)
     finally:
         db.close()
     logger.info("UrbanAid API started (env=%s, utilities=%d)", ENVIRONMENT, count)
