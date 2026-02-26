@@ -33,6 +33,7 @@ export default {
       bundleIdentifier: 'com.urbanaid.app',
       supportsTablet: true,
       buildNumber: '1',
+      googleServicesFile: './GoogleService-Info.plist',
       infoPlist: {
         NSLocationWhenInUseUsageDescription:
           'UrbanAid needs location access to find nearby public utilities.',
@@ -73,6 +74,8 @@ export default {
     plugins: [
       '@react-native-firebase/app',
       '@react-native-firebase/crashlytics',
+      './plugins/withFirebaseModularHeaders',
+      './plugins/withMarkerIconPreloader',
       'expo-updates',
       [
         'expo-notifications',
