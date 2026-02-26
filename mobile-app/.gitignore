@@ -77,5 +77,4 @@ yarn-error.log
 
 # API Keys and sensitive config
 react-native-config.js
-google-services.json
-GoogleService-Info.plist 
+google-services.json 

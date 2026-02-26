@@ -25,9 +25,7 @@ export default {
       url: 'https://u.expo.dev/ecf5c188-010a-4e84-9e45-2b3cae4acb92',
       fallbackToCacheTimeout: 30000,
     },
-    runtimeVersion: {
-      policy: 'appVersion',
-    },
+    runtimeVersion: '1.0.0',
     assetBundlePatterns: ['**/*'],
     ios: {
       bundleIdentifier: 'com.urbanaid.app',
