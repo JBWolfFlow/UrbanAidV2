@@ -93,9 +93,8 @@ https://github.com/JBWolfFlow/UrbanAidV2
 
 ## Privacy Policy URL
 ```
-https://urbanaid.app/privacy
+https://jbwolfflow.github.io/UrbanAidV2/privacy-policy.html
 ```
-*(Update to actual hosted URL before submission)*
 
 ---
 
