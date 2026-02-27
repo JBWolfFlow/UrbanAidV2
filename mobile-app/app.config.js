@@ -30,7 +30,7 @@ export default {
     ios: {
       bundleIdentifier: 'com.urbanaid.app',
       supportsTablet: true,
-      buildNumber: '1',
+      buildNumber: '2',
       googleServicesFile: './GoogleService-Info.plist',
       infoPlist: {
         NSLocationWhenInUseUsageDescription:
