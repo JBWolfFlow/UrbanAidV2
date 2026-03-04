@@ -41,6 +41,7 @@ export default {
           'UrbanAid uses your camera to take a photo for your profile picture, which is displayed on your account page.',
         NSPhotoLibraryUsageDescription:
           'UrbanAid accesses your photo library so you can choose an existing photo as your profile picture.',
+        ITSAppUsesNonExemptEncryption: false,
       },
       config: {
         googleMapsApiKey: GOOGLE_MAPS_API_KEY,

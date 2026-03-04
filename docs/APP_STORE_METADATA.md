@@ -11,7 +11,7 @@ UrbanAid
 
 ## Subtitle (30 characters max)
 ```
-Find Public Utilities Nearby
+    Find Public Utilities Nearby
 ```
 
 ## Category
@@ -83,7 +83,7 @@ utilities,restroom,water fountain,shelter,free food,public wifi,homeless,transit
 
 ## Support URL
 ```
-https://github.com/JBWolfFlow/UrbanAidV2/issues
+    https://github.com/JBWolfFlow/UrbanAidV2/issues
 ```
 
 ## Marketing URL

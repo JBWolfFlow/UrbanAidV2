@@ -35,5 +35,12 @@
         "URBANAID_API_URL": "https://urbanaidv2-production.up.railway.app"
       }
     }
+  },
+  "submit": {
+    "production": {
+      "ios": {
+        "appleTeamId": "3T6W8XHSWL"
+      }
+    }
   }
 }
