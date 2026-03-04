@@ -38,9 +38,9 @@ export default {
         NSLocationAlwaysAndWhenInUseUsageDescription:
           'UrbanAid needs location access to find nearby public utilities.',
         NSCameraUsageDescription:
-          'UrbanAid needs camera access to take photos of utilities.',
+          'UrbanAid uses your camera to take a photo for your profile picture, which is displayed on your account page.',
         NSPhotoLibraryUsageDescription:
-          'UrbanAid needs photo library access to select utility images.',
+          'UrbanAid accesses your photo library so you can choose an existing photo as your profile picture.',
       },
       config: {
         googleMapsApiKey: GOOGLE_MAPS_API_KEY,

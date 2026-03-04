@@ -133,7 +133,7 @@ export const requestCameraPermission = async (): Promise<boolean> => {
         PermissionsAndroid.PERMISSIONS.CAMERA,
         {
           title: 'Camera Permission',
-          message: 'UrbanAid needs camera access to take photos of utilities.',
+          message: 'UrbanAid uses your camera to take a photo for your profile picture, which is displayed on your account page.',
           buttonNeutral: 'Ask Me Later',
           buttonNegative: 'Cancel',
           buttonPositive: 'OK',
@@ -161,7 +161,7 @@ export const requestPhotoLibraryPermission = async (): Promise<boolean> => {
         PermissionsAndroid.PERMISSIONS.READ_EXTERNAL_STORAGE,
         {
           title: 'Photo Library Permission',
-          message: 'UrbanAid needs photo library access to select images.',
+          message: 'UrbanAid accesses your photo library so you can choose an existing photo as your profile picture.',
           buttonNeutral: 'Ask Me Later',
           buttonNegative: 'Cancel',
           buttonPositive: 'OK',

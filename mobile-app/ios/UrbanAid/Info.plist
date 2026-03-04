@@ -48,13 +48,13 @@
       <true/>
     </dict>
     <key>NSCameraUsageDescription</key>
-    <string>UrbanAid needs camera access to take photos of utilities.</string>
+    <string>UrbanAid uses your camera to take a photo for your profile picture, which is displayed on your account page.</string>
     <key>NSLocationAlwaysAndWhenInUseUsageDescription</key>
     <string>UrbanAid needs location access to find nearby public utilities.</string>
     <key>NSLocationWhenInUseUsageDescription</key>
     <string>UrbanAid needs location access to find nearby public utilities.</string>
     <key>NSPhotoLibraryUsageDescription</key>
-    <string>UrbanAid needs photo library access to select utility images.</string>
+    <string>UrbanAid accesses your photo library so you can choose an existing photo as your profile picture.</string>
     <key>UILaunchStoryboardName</key>
     <string>SplashScreen</string>
     <key>UIRequiredDeviceCapabilities</key>
